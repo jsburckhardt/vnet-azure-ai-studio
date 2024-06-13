@@ -1,5 +1,5 @@
 {
-	"name": "Getting Started",
+	"name": "vnet-azure-ais-studio",
 	"image": "mcr.microsoft.com/devcontainers/universal:2",
 	"hostRequirements": {
 	  "cpus": 4
