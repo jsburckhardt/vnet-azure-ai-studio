@@ -1,284 +1,437 @@
-@description('Azure region for the deployment, resource group and resources.')
+@description('Specifies the name of the Azure Machine Learning workspace.')
+param workspaceName string
+
+@description('Specifies the location for workspace.')
 param location string
 
-@description('Name of the virtual network resource.')
-param virtualNetworkName string
+@description('Specifies the identity type of the Azure Machine Learning workspace.')
+@allowed([
+  'systemAssigned'
+  'userAssigned'
+  'systemAssigned,userAssigned'
+])
+param identityType string = 'systemAssigned'
 
-@description('Optional tags for the resources.')
-param tagsByResource object = {}
+@description('Specifies the resource group of user assigned identity that represents the Azure Machine Learing workspace.')
+param primaryUserAssignedIdentityResourceGroup string = resourceGroup().name
 
-@description('Array of address blocks reserved for this virtual network, in CIDR notation.')
+@description('Specifies the name of user assigned identity that represents the Azure Machine Learing    workspace.')
+param primaryUserAssignedIdentityName string = ''
+
+@description('Specifies the resource group of user assigned identity that needs to be used to access the key for encryption.')
+param cmkUserAssignedIdentityResourceGroup string = resourceGroup().name
+
+@description('Specifies the name of user assigned identity that needs to be used to access the key for encryption.')
+param cmkUserAssignedIdentityName string = ''
+
+@description('Tags for workspace, will also be populated if provisioning new dependent resources.')
+param tagValues object = {}
+
+@description('Determines whether or not a new storage should be provisioned.')
+@allowed([
+  'new'
+  'existing'
+])
+param storageAccountOption string = 'new'
+
+@description('Name of the storage account.')
+param storageAccountName string = 'sa${uniqueString(resourceGroup().id, workspaceName)}'
+
+@allowed([
+  'Standard_LRS'
+  'Standard_GRS'
+  'Standard_RAGRS'
+  'Standard_ZRS'
+  'Standard_GZRS'
+  'Standard_RAGZRS'
+])
+param storageAccountType string = 'Standard_LRS'
+
+@description('Determines whether or not to put the storage account behind VNet')
+@allowed([
+  'true'
+  'false'
+])
+param storageAccountBehindVNet string = 'false'
+
+@description('Resource group name of the storage account if using existing one')
+param storageAccountResourceGroupName string = resourceGroup().name
+
+@description('Determines whether or not a new key vault should be provisioned.')
+@allowed([
+  'new'
+  'existing'
+])
+param keyVaultOption string = 'new'
+
+@description('Name of the key vault.')
+param keyVaultName string = 'kv${uniqueString(resourceGroup().id, workspaceName)}'
+
+@description('Determines whether or not to put the storage account behind VNet')
+@allowed([
+  'true'
+  'false'
+])
+param keyVaultBehindVNet string = 'false'
+
+@description('Resource group name of the key vault if using existing one')
+param keyVaultResourceGroupName string = resourceGroup().name
+
+@description('Determines whether or not new ApplicationInsights should be provisioned.')
+@allowed([
+  'new'
+  'existing'
+])
+param applicationInsightsOption string = 'new'
+
+@description('Name of ApplicationInsights.')
+param applicationInsightsName string = 'ai${uniqueString(resourceGroup().id, workspaceName)}'
+
+@description('Resource group name of the application insights if using existing one.')
+param applicationInsightsResourceGroupName string = resourceGroup().name
+
+@description('Determines whether or not a new container registry should be provisioned.')
+@allowed([
+  'new'
+  'existing'
+  'none'
+])
+param containerRegistryOption string = 'none'
+
+@description('The container registry bind to the workspace.')
+param containerRegistryName string = 'cr${uniqueString(resourceGroup().id, workspaceName)}'
+
+@allowed([
+  'Basic'
+  'Standard'
+  'Premium'
+])
+param containerRegistrySku string = 'Standard'
+
+@description('Resource group name of the container registry if using existing one.')
+param containerRegistryResourceGroupName string = resourceGroup().name
+
+@description('Determines whether or not to put container registry behind VNet.')
+@allowed([
+  'true'
+  'false'
+])
+param containerRegistryBehindVNet string = 'false'
+
+@description('Determines whether or not a new VNet should be provisioned.')
+@allowed([
+  'new'
+  'existing'
+  'none'
+])
+param vnetOption string = ((privateEndpointType == 'none') ? 'none' : 'new')
+
+@description('Name of the VNet')
+param vnetName string = 'vn${uniqueString(resourceGroup().id, workspaceName)}'
+
+@description('Resource group name of the VNET if using existing one.')
+param vnetResourceGroupName string = resourceGroup().name
+
+@description('Required if existing VNET location differs from workspace location')
+param vnetLocation string = location
+
+@description('Address prefix of the virtual network')
 param addressPrefixes array = [
-  '10.1.0.0/16'
+  '10.0.0.0/16'
 ]
 
-@description('Array of subnet objects for this virtual network.')
-param subnets array = [
-  {
-    name: 'default'
-    properties: {
-      addressPrefixes: [
-        '10.1.0.0/24'
-      ]
+@description('Determines whether or not a new subnet should be provisioned.')
+@allowed([
+  'new'
+  'existing'
+  'none'
+])
+param subnetOption string = (((privateEndpointType != 'none') || (vnetOption == 'new')) ? 'new' : 'none')
+
+@description('Name of the subnet')
+param subnetName string = 'sn${uniqueString(resourceGroup().id, workspaceName)}'
+
+@description('Subnet prefix of the virtual network')
+param subnetPrefix string = '10.0.0.0/24'
+
+@description('Azure Databrick workspace to be linked to the workspace')
+param adbWorkspaceId string = ''
+
+@description('Specifies that the Azure Machine Learning workspace holds highly confidential data.')
+@allowed([
+  false
+  true
+])
+param confidential_data bool = false
+
+@description('Specifies if the Azure Machine Learning workspace should be encrypted with customer managed key.')
+@allowed([
+  'Enabled'
+  'Disabled'
+])
+param encryption_status string = 'Disabled'
+
+@description('Specifies the customer managed keyVault arm id. Required when encryption is enabled')
+param cmk_keyvault string = ''
+
+@description('Specifies if the customer managed keyvault key uri. Required when encryption is enabled')
+param resource_cmk_uri string = ''
+
+@allowed([
+  'AutoApproval'
+  'ManualApproval'
+  'none'
+])
+param privateEndpointType string = 'none'
+
+var tenantId = subscription().tenantId
+
+var storageAccountId = resourceId(
+  storageAccountResourceGroupName,
+  'Microsoft.Storage/storageAccounts',
+  storageAccountName
+)
+var keyVaultId = resourceId(keyVaultResourceGroupName, 'Microsoft.KeyVault/vaults', keyVaultName)
+var containerRegistryId = resourceId(
+  containerRegistryResourceGroupName,
+  'Microsoft.ContainerRegistry/registries',
+  containerRegistryName
+)
+var applicationInsightId = resourceId(
+  applicationInsightsResourceGroupName,
+  'Microsoft.Insights/components',
+  applicationInsightsName
+)
+var vnetId = resourceId(vnetResourceGroupName, 'Microsoft.Network/virtualNetworks', vnetName)
+var subnetId = resourceId(vnetResourceGroupName, 'Microsoft.Network/virtualNetworks/subnets', vnetName, subnetName)
+
+var privateDnsZoneName = {
+  azureusgovernment: 'privatelink.api.ml.azure.us'
+  azurechinacloud: 'privatelink.api.ml.azure.cn'
+  azurecloud: 'privatelink.api.azureml.ms'
+}
+var privateAznbDnsZoneName = {
+  azureusgovernment: 'privatelink.notebooks.usgovcloudapi.net'
+  azurecloud: 'privatelink.notebooks.azure.net'
+  azurechinacloud: 'privatelink.notebooks.chinacloudapi.cn'
+}
+var enablePE = (privateEndpointType != 'none')
+var networkRuleSetBehindVNet = {
+  defaultAction: 'deny'
+  virtualNetworkRules: [
+    {
+      action: 'Allow'
+      id: subnetId
     }
+  ]
+}
+var serviceEndpointsAll = [
+  {
+    service: 'Microsoft.Storage'
   }
   {
-    name: 'peps'
-    properties: {
-      addressPrefixes: [
-        '10.1.1.0/24'
-      ]
-    }
+    service: 'Microsoft.KeyVault'
+  }
+  {
+    service: 'Microsoft.ContainerRegistry'
   }
 ]
+var serviceEndpointsAzureChinaCloud = [
+  {
+    service: 'Microsoft.Storage'
+  }
+  {
+    service: 'Microsoft.KeyVault'
+  }
+]
+var privateEndpointSettings = {
+  name: '${workspaceName}-PrivateEndpoint'
+  properties: {
+    privateLinkServiceId: workspace.id
+    groupIds: [
+      'amlworkspace'
+    ]
+  }
+}
+var defaultPEConnections = array(privateEndpointSettings)
+var userAssignedIdentities = union(userAssignedIdentitiesPrimary, userAssignedIdentitiesCmk)
+var userAssignedIdentityPrimary = {
+  '${primaryUserAssignedIdentity}': {}
+}
+var userAssignedIdentitiesPrimary = ((primaryUserAssignedIdentityName != '') ? userAssignedIdentityPrimary : json('{}'))
+var primaryUserAssignedIdentity = resourceId(
+  primaryUserAssignedIdentityResourceGroup,
+  'Microsoft.ManagedIdentity/userAssignedIdentities',
+  primaryUserAssignedIdentityName
+)
+var userAssignedIdentityCmk = {
+  '${cmkUserAssignedIdentity}': {}
+}
+var userAssignedIdentitiesCmk = ((cmkUserAssignedIdentityName != '') ? userAssignedIdentityCmk : json('{}'))
+var cmkUserAssignedIdentity = resourceId(
+  cmkUserAssignedIdentityResourceGroup,
+  'Microsoft.ManagedIdentity/userAssignedIdentities',
+  cmkUserAssignedIdentityName
+)
+var encryptionUserAssignedIdentity = {
+  userAssignedIdentity: cmkUserAssignedIdentity
+}
+var encryptionIdentity = ((cmkUserAssignedIdentityName != '') ? encryptionUserAssignedIdentity : json('{}'))
+var appInsightsLocation = (((location == 'westcentralus') || (location == 'eastus2euap') || (location == 'centraluseuap') || (location == 'westus3'))
+  ? 'southcentralus'
+  : ((location == 'canadaeast')
+      ? 'canadacentral'
+      : ((location == 'qatarcentral') ? 'uaenorth' : ((location == 'spaincentral') ? 'francecentral' : location))))
 
-
-@description('Enable Azure Bastion on this virtual network.')
-param bastionEnabled bool = false
-
-
-@description('Create a Public IP address for Azure Bastion.')
-param bastionPublicIpAddressIsNew bool = false
-
-@description('Create a network security group for Azure Bastion.')
-param bastionNsgIsNew bool = false
-
-
-
-
-@description('Name of the Azure Bastion resource.')
-param bastionName string = '##bastion-name-not-set##'
-
-@description('Name of the Azure Bastion resource.')
-param bastionPublicIpAddressName string = '##bastion-public-ip-address-name-not-set##'
-param bastionPublicIPAddressId string = '##bastion-public-i-p-address-id-not-set##'
-param bastionNsgName string = '##bastion-nsg-name-not-set##'
-param bastionNsgId string = '##bastion-nsg-id-not-set##'
-
-
-@description('Array of NAT Gateway objects for subnets.')
-param networkSecurityGroupsNew array = []
-
-var azureBastionSubnetId = (contains(subnetNames, 'AzureBastionSubnet')
-  ? resourceId('Microsoft.Network/virtualNetworks/subnets', virtualNetworkName, 'AzureBastionSubnet')
-  : null)
-
-var subnetNames = [for item in subnets: item.name]
-
-resource virtualNetwork 'Microsoft.Network/virtualNetworks@2023-02-01' = {
-  name: virtualNetworkName
+resource vnet 'Microsoft.Network/virtualNetworks@2022-05-01' = if (vnetOption == 'new') {
+  name: vnetName
   location: location
-  tags: (contains(tagsByResource, 'Microsoft.Network/virtualNetworks')
-    ? tagsByResource['Microsoft.Network/virtualNetworks']
-    : {})
+  tags: tagValues
   properties: {
     addressSpace: {
       addressPrefixes: addressPrefixes
     }
-    subnets: subnets
+    enableDdosProtection: false
+    enableVmProtection: false
   }
-  dependsOn: [
-    bastionNsg
-    bastionPublicIpAddress
-    networkSecurityGroupsNew_name
-  ]
 }
 
-resource networkSecurityGroupsNew_name 'Microsoft.Network/networkSecurityGroups@2020-11-01' = [
-  for item in networkSecurityGroupsNew: if (length(networkSecurityGroupsNew) > 0) {
-    name: item.name
-    location: location
-    tags: (contains(tagsByResource, 'Microsoft.Network/networkSecurityGroups')
-      ? tagsByResource['Microsoft.Network/networkSecurityGroups']
-      : {})
-    properties: {}
+resource subnet 'Microsoft.Network/virtualNetworks/subnets@2022-05-01' = if (subnetOption == 'new') {
+  parent: vnet
+  name: subnetName
+  properties: {
+    addressPrefix: subnetPrefix
+    privateLinkServiceNetworkPolicies: 'Enabled'
+    serviceEndpoints: ((toLower(environment().name) == 'azurechinacloud')
+      ? serviceEndpointsAzureChinaCloud
+      : serviceEndpointsAll)
   }
-]
+}
 
-resource bastionPublicIpAddress 'Microsoft.Network/publicIPAddresses@2022-07-01' = if (bastionEnabled && bastionPublicIpAddressIsNew) {
-  name: bastionPublicIpAddressName
+resource storageAccount 'Microsoft.Storage/storageAccounts@2022-05-01' = if (storageAccountOption == 'new') {
+  name: storageAccountName
   location: location
   sku: {
-    name: 'Standard'
+    name: storageAccountType
   }
-  properties: {
-    publicIPAllocationMethod: 'Static'
-  }
-}
-
-resource bastionNsg 'Microsoft.Network/networkSecurityGroups@2022-07-01' = if (bastionNsgIsNew) {
-  name: bastionNsgName
-  location: location
-  properties: {
-    securityRules: [
-      {
-        name: 'AllowHttpsInBound'
-        properties: {
-          protocol: 'Tcp'
-          sourcePortRange: '*'
-          sourceAddressPrefix: 'Internet'
-          destinationPortRange: '443'
-          destinationAddressPrefix: '*'
-          access: 'Allow'
-          priority: 100
-          direction: 'Inbound'
-        }
-      }
-      {
-        name: 'AllowGatewayManagerInBound'
-        properties: {
-          protocol: 'Tcp'
-          sourcePortRange: '*'
-          sourceAddressPrefix: 'GatewayManager'
-          destinationPortRange: '443'
-          destinationAddressPrefix: '*'
-          access: 'Allow'
-          priority: 110
-          direction: 'Inbound'
-        }
-      }
-      {
-        name: 'AllowLoadBalancerInBound'
-        properties: {
-          protocol: 'Tcp'
-          sourcePortRange: '*'
-          sourceAddressPrefix: 'AzureLoadBalancer'
-          destinationPortRange: '443'
-          destinationAddressPrefix: '*'
-          access: 'Allow'
-          priority: 120
-          direction: 'Inbound'
-        }
-      }
-      {
-        name: 'AllowBastionHostCommunicationInBound'
-        properties: {
-          protocol: '*'
-          sourcePortRange: '*'
-          sourceAddressPrefix: 'VirtualNetwork'
-          destinationPortRanges: [
-            '8080'
-            '5701'
-          ]
-          destinationAddressPrefix: 'VirtualNetwork'
-          access: 'Allow'
-          priority: 130
-          direction: 'Inbound'
-        }
-      }
-      {
-        name: 'DenyAllInBound'
-        properties: {
-          protocol: '*'
-          sourcePortRange: '*'
-          sourceAddressPrefix: '*'
-          destinationPortRange: '*'
-          destinationAddressPrefix: '*'
-          access: 'Deny'
-          priority: 1000
-          direction: 'Inbound'
-        }
-      }
-      {
-        name: 'AllowSshRdpOutBound'
-        properties: {
-          protocol: 'Tcp'
-          sourcePortRange: '*'
-          sourceAddressPrefix: '*'
-          destinationPortRanges: [
-            '22'
-            '3389'
-          ]
-          destinationAddressPrefix: 'VirtualNetwork'
-          access: 'Allow'
-          priority: 100
-          direction: 'Outbound'
-        }
-      }
-      {
-        name: 'AllowAzureCloudCommunicationOutBound'
-        properties: {
-          protocol: 'Tcp'
-          sourcePortRange: '*'
-          sourceAddressPrefix: '*'
-          destinationPortRange: '443'
-          destinationAddressPrefix: 'AzureCloud'
-          access: 'Allow'
-          priority: 110
-          direction: 'Outbound'
-        }
-      }
-      {
-        name: 'AllowBastionHostCommunicationOutBound'
-        properties: {
-          protocol: '*'
-          sourcePortRange: '*'
-          sourceAddressPrefix: 'VirtualNetwork'
-          destinationPortRanges: [
-            '8080'
-            '5701'
-          ]
-          destinationAddressPrefix: 'VirtualNetwork'
-          access: 'Allow'
-          priority: 120
-          direction: 'Outbound'
-        }
-      }
-      {
-        name: 'AllowGetSessionInformationOutBound'
-        properties: {
-          protocol: '*'
-          sourcePortRange: '*'
-          sourceAddressPrefix: '*'
-          destinationAddressPrefix: 'Internet'
-          destinationPortRanges: [
-            '80'
-            '443'
-          ]
-          access: 'Allow'
-          priority: 130
-          direction: 'Outbound'
-        }
-      }
-      {
-        name: 'DenyAllOutBound'
-        properties: {
-          protocol: '*'
-          sourcePortRange: '*'
-          destinationPortRange: '*'
-          sourceAddressPrefix: '*'
-          destinationAddressPrefix: '*'
-          access: 'Deny'
-          priority: 1000
-          direction: 'Outbound'
-        }
-      }
-    ]
-  }
-}
-
-resource bastion 'Microsoft.Network/bastionHosts@2022-07-01' = if (bastionEnabled) {
-  name: bastionName
-  location: location
-  tags: (contains(tagsByResource, 'Microsoft.Network/bastionHosts')
-    ? tagsByResource['Microsoft.Network/bastionHosts']
-    : {})
-  properties: {
-    ipConfigurations: [
-      {
-        name: 'IpConf'
-        properties: {
-          subnet: {
-            id: azureBastionSubnetId
-          }
-          publicIPAddress: {
-            id: (bastionPublicIpAddressIsNew ? bastionPublicIpAddress.id : bastionPublicIPAddressId)
-          }
-        }
-      }
-    ]
-  }
+  kind: 'StorageV2'
+  tags: tagValues
   dependsOn: [
-    virtualNetwork
+    subnet
   ]
+  properties: {
+    encryption: {
+      services: {
+        blob: {
+          enabled: true
+        }
+        file: {
+          enabled: true
+        }
+      }
+      keySource: 'Microsoft.Storage'
+    }
+    supportsHttpsTrafficOnly: true
+    minimumTlsVersion: 'TLS1_2'
+    allowBlobPublicAccess: false
+    networkAcls: ((storageAccountBehindVNet == 'true') ? networkRuleSetBehindVNet : json('null'))
+  }
+}
+
+resource vault 'Microsoft.KeyVault/vaults@2022-07-01' = if (keyVaultOption == 'new') {
+  name: keyVaultName
+  location: location
+  tags: tagValues
+  dependsOn: [
+    subnet
+  ]
+  properties: {
+    tenantId: tenantId
+    sku: {
+      name: 'standard'
+      family: 'A'
+    }
+    accessPolicies: []
+    networkAcls: ((keyVaultBehindVNet == 'true') ? networkRuleSetBehindVNet : json('null'))
+  }
+}
+
+resource registry 'Microsoft.ContainerRegistry/registries@2022-02-01-preview' = if (containerRegistryOption == 'new') {
+  name: containerRegistryName
+  location: location
+  sku: {
+    name: containerRegistrySku
+  }
+  tags: tagValues
+  dependsOn: [
+    subnet
+  ]
+  properties: {
+    adminUserEnabled: true
+    networkRuleSet: ((containerRegistryBehindVNet == 'true') ? networkRuleSetBehindVNet : json('null'))
+  }
+}
+
+resource insight 'Microsoft.Insights/components@2020-02-02' = if (applicationInsightsOption == 'new') {
+  name: applicationInsightsName
+  location: appInsightsLocation
+  kind: 'web'
+  tags: tagValues
+  properties: {
+    Application_Type: 'web'
+  }
+}
+
+resource workspace 'Microsoft.MachineLearningServices/workspaces@2022-10-01' = {
+  name: workspaceName
+  location: location
+  identity: {
+    type: identityType
+    userAssignedIdentities: (((identityType == 'userAssigned') || (identityType == 'systemAssigned,userAssigned'))
+      ? userAssignedIdentities
+      : json('null'))
+  }
+  tags: tagValues
+  dependsOn: [
+    storageAccount
+    vault
+    registry
+    insight
+  ]
+  properties: {
+    friendlyName: workspaceName
+    storageAccount: storageAccountId
+    keyVault: keyVaultId
+    applicationInsights: applicationInsightId
+    containerRegistry: ((containerRegistryOption != 'none') ? containerRegistryId : json('null'))
+    adbWorkspace: ((adbWorkspaceId == '') ? json('null') : adbWorkspaceId)
+    primaryUserAssignedIdentity: ((identityType == 'userAssigned') ? primaryUserAssignedIdentity : json('null'))
+    encryption: {
+      status: encryption_status
+      identity: encryptionIdentity
+      keyVaultProperties: {
+        keyVaultArmId: cmk_keyvault
+        keyIdentifier: resource_cmk_uri
+      }
+    }
+    hbiWorkspace: confidential_data
+    publicNetworkAccess: 'Disabled'
+  }
+}
+
+module DeployPrivateEndpoints './nested_DeployPrivateEndpoints.bicep' = {
+  name: 'DeployPrivateEndpoints'
+  scope: resourceGroup(vnetResourceGroupName)
+  params: {
+    enablePE: enablePE
+    defaultPEConnections: defaultPEConnections
+    subnetId: subnetId
+    privateDnsZoneName: privateDnsZoneName
+    privateAznbDnsZoneName: privateAznbDnsZoneName
+    vnetId: vnetId
+    workspaceName: workspaceName
+    vnetLocation: vnetLocation
+    tagValues: tagValues
+    privateEndpointType: privateEndpointType
+  }
 }

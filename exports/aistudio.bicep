@@ -101,12 +101,9 @@ resource workspaces_aistudio01_name_resource 'Microsoft.MachineLearningServices/
         sparkReady: false
       }
     }
-    v1LegacyMode: false
     containerRegistry: registries_aistudioacr01_externalid
     publicNetworkAccess: 'Disabled'
     ipAllowlist: []
-    discoveryUrl: 'https://eastus.api.azureml.ms/discovery'
-    enableSoftwareBillOfMaterials: false
     workspaceHubConfig: {
       defaultWorkspaceResourceGroup: '/subscriptions/266966fb-4c39-4b07-a8b3-f1b1dff5670d/resourceGroups/aistudio'
     }
