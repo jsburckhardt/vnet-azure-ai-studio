@@ -50,6 +50,12 @@ param keyVaultName string = ''
 param keyVaultSku string = 'standard'
 param keyVaultAccessPolicies array = []
 
+// ai studio service
+param aiStudioSerivceName string = ''
+param aiStudioSerivcesku string = 'S0'
+param aiStudioSerivcekind string = 'AIServices'
+param aiStudioSerivcepublicNetworkAccess string = 'Disabled'
+
 // ##########################################
 // Resources
 // ##########################################
@@ -93,6 +99,18 @@ module keyvault 'modules/keyvault.bicep' = {
   }
 }
 
+// AI Studio Service
+module aiStudioService 'modules/aiStudioService.bicep' = {
+  name: 'aiStudioService'
+  params: {
+    name: !empty(aiStudioSerivceName) ? aiStudioSerivceName : '${abbrs.cognitiveServicesAccounts}${name}${uniqueSuffix}'
+    sku: aiStudioSerivcesku
+    kind: aiStudioSerivcekind
+    publicNetworkAccess: aiStudioSerivcepublicNetworkAccess
+    location: location
+  }
+}
+
 // ##########################################
 // Outputs
 // ##########################################
@@ -102,3 +120,5 @@ output vnetId string = vnet.outputs.vnetId
 output pepSubnetId string = vnet.outputs.pepSubnetId
 // keyvault
 output keyVaultId string = keyvault.outputs.keyVaultId
+// ai studio service
+output aiStudioServiceId string = aiStudioService.outputs.aiStudioServiceId
