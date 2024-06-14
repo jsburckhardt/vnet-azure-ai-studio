@@ -16,6 +16,7 @@ param tagValues object = {}
 var abbrs = loadJsonContent('abbreviations.json')
 var uniqueSuffix = substring(uniqueString(resourceGroup().id), 0, 5)
 var name = toLower('${prefix}')
+var tenantId = subscription().tenantId
 
 // VNET params
 @description('Name of the VNet')
@@ -44,6 +45,11 @@ var serviceEndpointsAll = [
   }
 ]
 
+// keyvault params
+param keyVaultName string = ''
+param keyVaultSku string = 'standard'
+param keyVaultAccessPolicies array = []
+
 // ##########################################
 // Resources
 // ##########################################
@@ -62,6 +68,31 @@ module vnet 'modules/vnet.bicep' = {
   }
 }
 
+// Key Vault
+module keyvault 'modules/keyvault.bicep' = {
+  name: 'keyvault'
+  params: {
+    name: !empty(keyVaultName) ? keyVaultName : '${abbrs.keyVaultVaults}${name}${uniqueSuffix}'
+    location: location
+    sku: keyVaultSku
+    accessPolicies: keyVaultAccessPolicies
+    tenant: tenantId
+    enabledForDeployment: false
+    enabledForTemplateDeployment: false
+    enabledForDiskEncryption: false
+    enableRbacAuthorization: false
+    publicNetworkAccess: 'Disabled'
+    enableSoftDelete: true
+    softDeleteRetentionInDays: 90
+    networkAcls: {
+      defaultAction: 'deny'
+      bypass: 'AzureServices'
+      ipRules: []
+      virtualNetworkRules: []
+    }
+  }
+}
+
 // ##########################################
 // Outputs
 // ##########################################
@@ -69,3 +100,5 @@ module vnet 'modules/vnet.bicep' = {
 // vent
 output vnetId string = vnet.outputs.vnetId
 output pepSubnetId string = vnet.outputs.pepSubnetId
+// keyvault
+output keyVaultId string = keyvault.outputs.keyVaultId

@@ -17,7 +17,7 @@ param networkAcls object = {
   virtualNetworkRules: []
 }
 
-resource name_resource 'Microsoft.KeyVault/vaults@2023-08-01-preview' = {
+resource keyvault 'Microsoft.KeyVault/vaults@2023-07-01' = {
   name: name
   location: location
   properties: {
@@ -39,3 +39,5 @@ resource name_resource 'Microsoft.KeyVault/vaults@2023-08-01-preview' = {
   tags: {}
   dependsOn: []
 }
+
+output keyVaultId string = keyvault.id
