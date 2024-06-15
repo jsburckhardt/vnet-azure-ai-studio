@@ -60,7 +60,13 @@ param aiStudioSerivcepublicNetworkAccess string = 'Disabled'
 param containerRegistryName string = ''
 param zoneRedundancy string = 'disabled'
 param containerRegistrySku string = 'Premium'
-param publicNetworkAccess string = 'Disabled'
+param acrPublicNetworkAccess string = 'Disabled'
+
+// azure search
+param searchName string = ''
+param searchSku string = 'basic'
+param hostingMode string = 'default'
+param searchPublicNetworkAccess string = 'Disabled'
 
 // ##########################################
 // Resources
@@ -127,8 +133,20 @@ module acr 'modules/acr.bicep' = {
     location: location
     tags: tagValues
     containerRegistrySku: containerRegistrySku
-    publicNetworkAccess: publicNetworkAccess
+    publicNetworkAccess: acrPublicNetworkAccess
     zoneRedundancy: zoneRedundancy
+  }
+}
+
+// Azure Search
+module azureSearch 'modules/azureSearch.bicep' = {
+  name: 'azureSearch'
+  params: {
+    searchName: !empty(searchName) ? searchName : '${abbrs.searchSearchServices}${name}${uniqueSuffix}'
+    location: location
+    sku: searchSku
+    hostingMode: hostingMode
+    publicNetworkAccess: searchPublicNetworkAccess
   }
 }
 
@@ -143,3 +161,9 @@ output pepSubnetId string = vnet.outputs.pepSubnetId
 output keyVaultId string = keyvault.outputs.keyVaultId
 // ai studio service
 output aiStudioServiceId string = aiStudioService.outputs.aiStudioServiceId
+// acr
+output registryName string = acr.outputs.registryName
+output registryId string = acr.outputs.registryId
+output registryUrl string = acr.outputs.registryUrl
+// azure search
+output searchId string = azureSearch.outputs.searchId
