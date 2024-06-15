@@ -56,6 +56,12 @@ param aiStudioSerivcesku string = 'S0'
 param aiStudioSerivcekind string = 'AIServices'
 param aiStudioSerivcepublicNetworkAccess string = 'Disabled'
 
+// acr
+param containerRegistryName string = ''
+param zoneRedundancy string = 'disabled'
+param containerRegistrySku string = 'Premium'
+param publicNetworkAccess string = 'Disabled'
+
 // ##########################################
 // Resources
 // ##########################################
@@ -108,6 +114,21 @@ module aiStudioService 'modules/aiStudioService.bicep' = {
     kind: aiStudioSerivcekind
     publicNetworkAccess: aiStudioSerivcepublicNetworkAccess
     location: location
+  }
+}
+
+// ACR
+module acr 'modules/acr.bicep' = {
+  name: 'acr'
+  params: {
+    containerRegistryName: !empty(containerRegistryName)
+      ? containerRegistryName
+      : '${abbrs.containerRegistryRegistries}${name}${uniqueSuffix}'
+    location: location
+    tags: tagValues
+    containerRegistrySku: containerRegistrySku
+    publicNetworkAccess: publicNetworkAccess
+    zoneRedundancy: zoneRedundancy
   }
 }
 
