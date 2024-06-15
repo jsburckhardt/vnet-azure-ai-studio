@@ -18,3 +18,7 @@ resource registry 'Microsoft.ContainerRegistry/registries@2022-02-01-preview' = 
     zoneRedundancy: zoneRedundancy
   }
 }
+
+output registryName string = registry.name
+output registryId string = registry.id
+output registryUrl string = registry.properties.loginServer
