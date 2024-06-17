@@ -68,6 +68,10 @@ param searchSku string = 'basic'
 param hostingMode string = 'default'
 param searchPublicNetworkAccess string = 'Disabled'
 
+// storage
+param storageAccountName string = ''
+param storageSkuName string = 'Standard_LRS'
+
 // ##########################################
 // Resources
 // ##########################################
@@ -147,6 +151,17 @@ module azureSearch 'modules/azureSearch.bicep' = {
     sku: searchSku
     hostingMode: hostingMode
     publicNetworkAccess: searchPublicNetworkAccess
+  }
+}
+
+// Azure Storage
+module storage 'modules/storage.bicep' = {
+  name: 'azureStorage'
+  params: {
+    location: location
+    storageAccountName: !empty(storageAccountName) ? storageAccountName : '${abbrs.storageStorageAccounts}${name}${uniqueSuffix}'
+    storageSkuName: storageSkuName
+    tags: tagValues
   }
 }
 
