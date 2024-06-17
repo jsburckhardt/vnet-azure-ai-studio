@@ -72,6 +72,55 @@ param searchPublicNetworkAccess string = 'Disabled'
 param storageAccountName string = ''
 param storageSkuName string = 'Standard_LRS'
 
+// ai studio
+@description('Specifies the name of the Azure Machine Learning workspace.')
+param aiStudioWorkspaceName string = ''
+param aiStudioFriendlyName string = ''
+param aiStudioDescription string = ''
+@allowed([
+  'Default'
+  'FeatureStore'
+  'Hub'
+  'Project'
+])
+param aiStudioKind string = 'Hub'
+@description('Specifies the identity type of the Azure Machine Learning workspace.')
+@allowed([
+  'systemAssigned'
+  'userAssigned'
+])
+param aiStudioIdentityType string = 'systemAssigned'
+@description('Specifies the sku, also referred as \'edition\' of the Azure Machine Learning workspace.')
+@allowed([
+  'Basic'
+  'Free'
+  'Premium'
+  'Standard'
+])
+param aiStudioSku string = 'Basic'
+
+@description('Determines whether or not new ApplicationInsights should be provisioned.')
+@allowed([
+  'new'
+  'existing'
+  'none'
+])
+param applicationInsightsOption string = 'none'
+param applicationInsightsId string = ''
+@description('Determines whether or not a new container registry should be provisioned.')
+@allowed([
+  'new'
+  'existing'
+  'none'
+])
+param aiStudioContainerRegistryOption string = 'existing'
+@description('Managed network settings to be used for the workspace. If not specified, isolation mode Disabled is the default')
+param aiStudioManagedNetwork object = {
+  isolationMode: 'AllowInternetOutbound'
+}
+@description('Specifies whether the workspace can be accessed by public networks or not.')
+param aiStudioPublicNetworkAccess string = 'Disabled'
+
 // ##########################################
 // Resources
 // ##########################################
@@ -91,7 +140,7 @@ module vnet 'modules/vnet.bicep' = {
 }
 
 // Key Vault
-module keyvault 'modules/keyvault.bicep' = {
+module keyVault 'modules/keyvault.bicep' = {
   name: 'keyvault'
   params: {
     name: !empty(keyVaultName) ? keyVaultName : '${abbrs.keyVaultVaults}${name}${uniqueSuffix}'
@@ -119,7 +168,9 @@ module keyvault 'modules/keyvault.bicep' = {
 module aiStudioService 'modules/aiStudioService.bicep' = {
   name: 'aiStudioService'
   params: {
-    name: !empty(aiStudioSerivceName) ? aiStudioSerivceName : '${abbrs.cognitiveServicesAccounts}${name}${uniqueSuffix}'
+    name: !empty(aiStudioSerivceName)
+      ? aiStudioSerivceName
+      : '${abbrs.cognitiveServicesAccounts}service-${name}${uniqueSuffix}'
     sku: aiStudioSerivcesku
     kind: aiStudioSerivcekind
     publicNetworkAccess: aiStudioSerivcepublicNetworkAccess
@@ -159,9 +210,37 @@ module storage 'modules/storage.bicep' = {
   name: 'azureStorage'
   params: {
     location: location
-    storageAccountName: !empty(storageAccountName) ? storageAccountName : '${abbrs.storageStorageAccounts}${name}${uniqueSuffix}'
+    storageAccountName: !empty(storageAccountName)
+      ? storageAccountName
+      : '${abbrs.storageStorageAccounts}${name}${uniqueSuffix}'
     storageSkuName: storageSkuName
     tags: tagValues
+  }
+}
+
+// AI Studio
+module aiStudio 'modules/aiStudioWithInternet.bicep' = {
+  name: 'aiStudio'
+  params: {
+    tagValues: tagValues
+    workspaceName: !empty(aiStudioWorkspaceName)
+      ? aiStudioWorkspaceName
+      : '${abbrs.cognitiveServicesAccounts}${name}${uniqueSuffix}'
+    friendlyName: aiStudioFriendlyName
+    description: aiStudioDescription
+    location: location
+    kind: aiStudioKind
+    identityType: aiStudioIdentityType
+    sku: aiStudioSku
+    storageAccountId: storage.outputs.storageAccountId
+    keyVaultId: keyVault.outputs.keyVaultId
+    applicationInsightsOption: applicationInsightsOption
+    applicationInsightsId: applicationInsightsId
+    containerRegistryOption: aiStudioContainerRegistryOption
+    containerRegistryId: acr.outputs.registryId
+    // systemDatastoresAuthMode: systemDatastoresAuthMode
+    managedNetwork: aiStudioManagedNetwork
+    publicNetworkAccess: aiStudioPublicNetworkAccess
   }
 }
 
@@ -173,7 +252,7 @@ module storage 'modules/storage.bicep' = {
 output vnetId string = vnet.outputs.vnetId
 output pepSubnetId string = vnet.outputs.pepSubnetId
 // keyvault
-output keyVaultId string = keyvault.outputs.keyVaultId
+output keyVaultId string = keyVault.outputs.keyVaultId
 // ai studio service
 output aiStudioServiceId string = aiStudioService.outputs.aiStudioServiceId
 // acr
