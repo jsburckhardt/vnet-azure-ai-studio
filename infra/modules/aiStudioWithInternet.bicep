@@ -43,6 +43,18 @@ param managedNetwork object = {
 }
 param publicNetworkAccess string = 'Disabled'
 
+param aiStudioService string
+param aiSearchName string
+
+// get resources details
+resource openAi 'Microsoft.CognitiveServices/accounts@2023-05-01' existing = {
+  name: aiStudioService
+}
+
+resource search 'Microsoft.Search/searchServices@2021-04-01-preview' existing = if (!empty(aiSearchName)) {
+  name: aiSearchName
+}
+
 resource workspace 'Microsoft.MachineLearningServices/workspaces@2023-10-01' = {
   tags: tagValues
   name: workspaceName
@@ -66,6 +78,54 @@ resource workspace 'Microsoft.MachineLearningServices/workspaces@2023-10-01' = {
     primaryUserAssignedIdentity: ((identityType == 'userAssigned') ? primaryUserAssignedIdentity : null)
     managedNetwork: managedNetwork
     publicNetworkAccess: publicNetworkAccess
+  }
+  resource openAiConnection 'connections' = {
+    name: '${aiStudioService}-connection'
+    properties: {
+      category: 'AzureOpenAI'
+      authType: 'ApiKey'
+      isSharedToAll: true
+      target: openAi.properties.endpoints['OpenAI Language Model Instance API']
+      metadata: {
+        ApiVersion: '2023-07-01-preview'
+        ApiType: 'azure'
+        ResourceId: openAi.id
+      }
+      credentials: {
+        key: openAi.listKeys().key1
+      }
+    }
+  }
+
+  resource contentSafetyConnection 'connections' = {
+    name: openAiContentSafetyConnectionName
+    properties: {
+      category: 'AzureOpenAI'
+      authType: 'ApiKey'
+      isSharedToAll: true
+      target: openAi.properties.endpoints['Content Safety']
+      metadata: {
+        ApiVersion: '2023-07-01-preview'
+        ApiType: 'azure'
+        ResourceId: openAi.id
+      }
+      credentials: {
+        key: openAi.listKeys().key1
+      }
+    }
+  }
+
+  resource searchConnection 'connections' = if (!empty(aiSearchName)) {
+    name: aiSearchConnectionName
+    properties: {
+      category: 'CognitiveSearch'
+      authType: 'ApiKey'
+      isSharedToAll: true
+      target: 'https://${search.name}.search.windows.net/'
+      credentials: {
+        key: !empty(aiSearchName) ? search.listAdminKeys().primaryKey : ''
+      }
+    }
   }
 }
 
@@ -118,5 +178,24 @@ resource workspace 'Microsoft.MachineLearningServices/workspaces@2023-10-01' = {
 //     location: location
 //     tagValues: tagValues
 //     privateEndpointType: privateEndpointType
+//   }
+// }
+
+// from template
+// resource contentSafetyConnection 'connections' = {
+//   name: openAiContentSafetyConnectionName
+//   properties: {
+//     category: 'AzureOpenAI'
+//     authType: 'ApiKey'
+//     isSharedToAll: true
+//     target: openAi.properties.endpoints['Content Safety']
+//     metadata: {
+//       ApiVersion: '2023-07-01-preview'
+//       ApiType: 'azure'
+//       ResourceId: openAi.id
+//     }
+//     credentials: {
+//       key: openAi.listKeys().key1
+//     }
 //   }
 // }

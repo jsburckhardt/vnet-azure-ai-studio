@@ -241,6 +241,8 @@ module aiStudio 'modules/aiStudioWithInternet.bicep' = {
     // systemDatastoresAuthMode: systemDatastoresAuthMode
     managedNetwork: aiStudioManagedNetwork
     publicNetworkAccess: aiStudioPublicNetworkAccess
+    aiSearchName: azureSearch.outputs.searchName
+    aiStudioService: aiStudioService.outputs.aiStudioServiceName
   }
 }
 
