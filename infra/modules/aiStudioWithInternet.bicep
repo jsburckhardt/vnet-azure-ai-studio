@@ -55,7 +55,7 @@ resource search 'Microsoft.Search/searchServices@2021-04-01-preview' existing = 
   name: aiSearchName
 }
 
-resource workspace 'Microsoft.MachineLearningServices/workspaces@2023-08-01-preview' = {
+resource workspace 'Microsoft.MachineLearningServices/workspaces@2024-04-01' = {
   tags: tagValues
   name: workspaceName
   location: location
@@ -79,141 +79,70 @@ resource workspace 'Microsoft.MachineLearningServices/workspaces@2023-08-01-prev
     managedNetwork: managedNetwork
     publicNetworkAccess: publicNetworkAccess
   }
-  resource openAiConnection 'connections' = {
-    name: '${aiStudioService}-aoai-connection'
-    properties: {
-      category: 'AzureOpenAI'
-      authType: 'ApiKey'
-      isSharedToAll: true
-      target: openAi.properties.endpoints['OpenAI Language Model Instance API']
-      metadata: {
-        ApiVersion: '2023-07-01-preview'
-        ApiType: 'azure'
-        ResourceId: openAi.id
-      }
-      credentials: {
-        key: openAi.listKeys().key1
-      }
-    }
-  }
+  // resource openAiConnection 'connections' = {
+  //   name: '${aiStudioService}-aoai-connection'
+  //   properties: {
+  //     category: 'AzureOpenAI'
+  //     authType: 'ApiKey'
+  //     isSharedToAll: true
+  //     target: openAi.properties.endpoints['OpenAI Language Model Instance API']
+  //     metadata: {
+  //       ApiVersion: '2023-07-01-preview'
+  //       ApiType: 'azure'
+  //       ResourceId: openAi.id
+  //     }
+  //     credentials: {
+  //       key: openAi.listKeys().key1
+  //     }
+  //   }
+  // }
 
-  resource aiServicesConnection 'connections' = {
-    name: '${aiStudioService}-aiservices-connection'
-    properties: {
-      category: 'AIServices'
-      authType: 'ApiKey'
-      isSharedToAll: true
-      target: openAi.properties.endpoints['OpenAI Language Model Instance API']
-      metadata: {
-        ApiVersion: '2023-07-01-preview'
-        ApiType: 'azure'
-        ResourceId: openAi.id
-      }
-      credentials: {
-        key: openAi.listKeys().key1
-      }
-    }
-  }
+  // resource aiServicesConnection 'connections' = {
+  //   name: '${aiStudioService}-aiservices-connection'
+  //   properties: {
+  //     category: 'AIServices'
+  //     authType: 'ApiKey'
+  //     isSharedToAll: true
+  //     target: openAi.properties.endpoints['OpenAI Language Model Instance API']
+  //     metadata: {
+  //       ApiVersion: '2023-07-01-preview'
+  //       ApiType: 'azure'
+  //       ResourceId: openAi.id
+  //     }
+  //     credentials: {
+  //       key: openAi.listKeys().key1
+  //     }
+  //   }
+  // }
 
-  resource contentSafetyConnection 'connections' = {
-    name: '${aiStudioService}-content-safety-connection'
-    properties: {
-      category: 'AzureOpenAI'
-      authType: 'ApiKey'
-      isSharedToAll: true
-      target: openAi.properties.endpoints['Content Safety']
-      metadata: {
-        ApiVersion: '2023-07-01-preview'
-        ApiType: 'azure'
-        ResourceId: openAi.id
-      }
-      credentials: {
-        key: openAi.listKeys().key1
-      }
-    }
-  }
+  // resource contentSafetyConnection 'connections' = {
+  //   name: '${aiStudioService}-content-safety-connection'
+  //   properties: {
+  //     category: 'AzureOpenAI'
+  //     authType: 'ApiKey'
+  //     isSharedToAll: true
+  //     target: openAi.properties.endpoints['Content Safety']
+  //     metadata: {
+  //       ApiVersion: '2023-07-01-preview'
+  //       ApiType: 'azure'
+  //       ResourceId: openAi.id
+  //     }
+  //     credentials: {
+  //       key: openAi.listKeys().key1
+  //     }
+  //   }
+  // }
 
-  resource searchConnection 'connections' = if (!empty(aiSearchName)) {
-    name: '${aiSearchName}-connection'
-    properties: {
-      category: 'CognitiveSearch'
-      authType: 'ApiKey'
-      isSharedToAll: true
-      target: 'https://${search.name}.search.windows.net/'
-      credentials: {
-        key: !empty(aiSearchName) ? search.listAdminKeys().primaryKey : ''
-      }
-    }
-  }
+  // resource searchConnection 'connections' = if (!empty(aiSearchName)) {
+  //   name: '${aiSearchName}-connection'
+  //   properties: {
+  //     category: 'CognitiveSearch'
+  //     authType: 'ApiKey'
+  //     isSharedToAll: true
+  //     target: 'https://${search.name}.search.windows.net/'
+  //     credentials: {
+  //       key: !empty(aiSearchName) ? search.listAdminKeys().primaryKey : ''
+  //     }
+  //   }
+  // }
 }
-
-// resource workspaceName_Azure_OpenAI 'Microsoft.MachineLearningServices/workspaces/endpoints@2023-08-01-preview' = if (endpointOption == 'create') {
-//   parent: workspace
-//   name: 'Azure.OpenAI'
-//   properties: {
-//     name: 'Azure.OpenAI'
-//     endpointType: 'Azure.OpenAI'
-//     associatedResourceId: aiServices_var
-//   }
-//   dependsOn: [
-//     aiServices
-//   ]
-// }
-
-// resource workspaceName_Azure_ContentSafety 'Microsoft.MachineLearningServices/workspaces/endpoints@2023-08-01-preview' = if (endpointOption == 'create') {
-//   parent: workspace
-//   name: 'Azure.ContentSafety'
-//   properties: {
-//     name: 'Azure.ContentSafety'
-//     endpointType: 'Azure.ContentSafety'
-//     associatedResourceId: aiServices_var
-//   }
-//   dependsOn: [
-//     aiServices
-//   ]
-// }
-
-// resource workspaceName_Azure_Speech 'Microsoft.MachineLearningServices/workspaces/endpoints@2023-08-01-preview' = if (endpointOption == 'create') {
-//   parent: workspace
-//   name: 'Azure.Speech'
-//   properties: {
-//     name: 'Azure.Speech'
-//     endpointType: 'Azure.Speech'
-//     associatedResourceId: aiServices_var
-//   }
-//   dependsOn: [
-//     aiServices
-//   ]
-// }
-
-// module privateEndpointDeployment './nested_privateEndpointDeployment.bicep' = if (privateEndpointType != 'none') {
-//   name: privateEndpointDeploymentName
-//   scope: resourceGroup(privateEndpointSubscription, privateEndpointResourceGroupName)
-//   params: {
-//     variables_defaultPEConnections: defaultPEConnections
-//     variables_subnet: subnet
-//     privateEndpointName: privateEndpointName
-//     location: location
-//     tagValues: tagValues
-//     privateEndpointType: privateEndpointType
-//   }
-// }
-
-// from template
-// resource contentSafetyConnection 'connections' = {
-//   name: openAiContentSafetyConnectionName
-//   properties: {
-//     category: 'AzureOpenAI'
-//     authType: 'ApiKey'
-//     isSharedToAll: true
-//     target: openAi.properties.endpoints['Content Safety']
-//     metadata: {
-//       ApiVersion: '2023-07-01-preview'
-//       ApiType: 'azure'
-//       ResourceId: openAi.id
-//     }
-//     credentials: {
-//       key: openAi.listKeys().key1
-//     }
-//   }
-// }
