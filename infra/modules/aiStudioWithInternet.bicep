@@ -55,7 +55,7 @@ resource search 'Microsoft.Search/searchServices@2021-04-01-preview' existing = 
   name: aiSearchName
 }
 
-resource workspace 'Microsoft.MachineLearningServices/workspaces@2023-10-01' = {
+resource workspace 'Microsoft.MachineLearningServices/workspaces@2023-08-01-preview' = {
   tags: tagValues
   name: workspaceName
   location: location
@@ -80,7 +80,7 @@ resource workspace 'Microsoft.MachineLearningServices/workspaces@2023-10-01' = {
     publicNetworkAccess: publicNetworkAccess
   }
   resource openAiConnection 'connections' = {
-    name: '${aiStudioService}-connection'
+    name: '${aiStudioService}-aoai-connection'
     properties: {
       category: 'AzureOpenAI'
       authType: 'ApiKey'
@@ -97,8 +97,26 @@ resource workspace 'Microsoft.MachineLearningServices/workspaces@2023-10-01' = {
     }
   }
 
+  resource aiServicesConnection 'connections' = {
+    name: '${aiStudioService}-aiservices-connection'
+    properties: {
+      category: 'AIServices'
+      authType: 'ApiKey'
+      isSharedToAll: true
+      target: openAi.properties.endpoints['OpenAI Language Model Instance API']
+      metadata: {
+        ApiVersion: '2023-07-01-preview'
+        ApiType: 'azure'
+        ResourceId: openAi.id
+      }
+      credentials: {
+        key: openAi.listKeys().key1
+      }
+    }
+  }
+
   resource contentSafetyConnection 'connections' = {
-    name: openAiContentSafetyConnectionName
+    name: '${aiStudioService}-content-safety-connection'
     properties: {
       category: 'AzureOpenAI'
       authType: 'ApiKey'
@@ -116,7 +134,7 @@ resource workspace 'Microsoft.MachineLearningServices/workspaces@2023-10-01' = {
   }
 
   resource searchConnection 'connections' = if (!empty(aiSearchName)) {
-    name: aiSearchConnectionName
+    name: '${aiSearchName}-connection'
     properties: {
       category: 'CognitiveSearch'
       authType: 'ApiKey'
