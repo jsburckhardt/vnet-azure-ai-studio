@@ -47,7 +47,7 @@ param aiStudioService string
 param aiSearchName string
 
 // get resources details
-resource openAi 'Microsoft.CognitiveServices/accounts@2023-05-01' existing = {
+resource aiStudioServiceResource 'Microsoft.CognitiveServices/accounts@2023-05-01' existing = {
   name: aiStudioService
 }
 
@@ -79,70 +79,37 @@ resource workspace 'Microsoft.MachineLearningServices/workspaces@2024-04-01' = {
     managedNetwork: managedNetwork
     publicNetworkAccess: publicNetworkAccess
   }
-  // resource openAiConnection 'connections' = {
-  //   name: '${aiStudioService}-aoai-connection'
-  //   properties: {
-  //     category: 'AzureOpenAI'
-  //     authType: 'ApiKey'
-  //     isSharedToAll: true
-  //     target: openAi.properties.endpoints['OpenAI Language Model Instance API']
-  //     metadata: {
-  //       ApiVersion: '2023-07-01-preview'
-  //       ApiType: 'azure'
-  //       ResourceId: openAi.id
-  //     }
-  //     credentials: {
-  //       key: openAi.listKeys().key1
-  //     }
-  //   }
-  // }
+}
 
-  // resource aiServicesConnection 'connections' = {
-  //   name: '${aiStudioService}-aiservices-connection'
-  //   properties: {
-  //     category: 'AIServices'
-  //     authType: 'ApiKey'
-  //     isSharedToAll: true
-  //     target: openAi.properties.endpoints['OpenAI Language Model Instance API']
-  //     metadata: {
-  //       ApiVersion: '2023-07-01-preview'
-  //       ApiType: 'azure'
-  //       ResourceId: openAi.id
-  //     }
-  //     credentials: {
-  //       key: openAi.listKeys().key1
-  //     }
-  //   }
-  // }
+resource aiServiceConnection 'Microsoft.MachineLearningServices/workspaces/connections@2024-04-01' = {
+  parent: workspace
+  name: '${aiStudioService}-aiservice-connection'
+  properties: {
+    category: 'AIServices'
+    authType: 'ApiKey'
+    isSharedToAll: true
+    target: aiStudioServiceResource.properties.endpoints['OpenAI Language Model Instance API']
+    metadata: {
+      ApiVersion: '2023-07-01-preview'
+      ApiType: 'azure'
+      ResourceId: aiStudioServiceResource.id
+    }
+    credentials: {
+      key: aiStudioServiceResource.listKeys().key1
+    }
+  }
+}
 
-  // resource contentSafetyConnection 'connections' = {
-  //   name: '${aiStudioService}-content-safety-connection'
-  //   properties: {
-  //     category: 'AzureOpenAI'
-  //     authType: 'ApiKey'
-  //     isSharedToAll: true
-  //     target: openAi.properties.endpoints['Content Safety']
-  //     metadata: {
-  //       ApiVersion: '2023-07-01-preview'
-  //       ApiType: 'azure'
-  //       ResourceId: openAi.id
-  //     }
-  //     credentials: {
-  //       key: openAi.listKeys().key1
-  //     }
-  //   }
-  // }
-
-  // resource searchConnection 'connections' = if (!empty(aiSearchName)) {
-  //   name: '${aiSearchName}-connection'
-  //   properties: {
-  //     category: 'CognitiveSearch'
-  //     authType: 'ApiKey'
-  //     isSharedToAll: true
-  //     target: 'https://${search.name}.search.windows.net/'
-  //     credentials: {
-  //       key: !empty(aiSearchName) ? search.listAdminKeys().primaryKey : ''
-  //     }
-  //   }
-  // }
+resource searchConnection 'Microsoft.MachineLearningServices/workspaces/connections@2024-04-01' = if (!empty(aiSearchName)) {
+  parent: workspace
+  name: '${aiSearchName}-connection'
+  properties: {
+    category: 'CognitiveSearch'
+    authType: 'ApiKey'
+    isSharedToAll: true
+    target: 'https://${search.name}.search.windows.net/'
+    credentials: {
+      key: !empty(aiSearchName) ? search.listAdminKeys().primaryKey : ''
+    }
+  }
 }

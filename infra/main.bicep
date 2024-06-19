@@ -121,6 +121,9 @@ param aiStudioManagedNetwork object = {
 @description('Specifies whether the workspace can be accessed by public networks or not.')
 param aiStudioPublicNetworkAccess string = 'Disabled'
 
+// vpn
+param deployVpnResources bool = false
+
 // ##########################################
 // Resources
 // ##########################################
@@ -243,6 +246,14 @@ module aiStudio 'modules/aiStudioWithInternet.bicep' = {
     publicNetworkAccess: aiStudioPublicNetworkAccess
     aiSearchName: azureSearch.outputs.searchName
     aiStudioService: aiStudioService.outputs.aiStudioServiceName
+  }
+}
+
+// not required for real env - just for testing - vpn=true
+module vpnAccess 'modules/vpnAccess.bicep' = if (deployVpnResources) {
+  name: 'vpnAccess'
+  params: {
+    vnetName: vnet.outputs.vnetName
   }
 }
 
