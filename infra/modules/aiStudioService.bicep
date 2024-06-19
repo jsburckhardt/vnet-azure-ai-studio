@@ -23,3 +23,4 @@ resource aiStudioService 'Microsoft.CognitiveServices/accounts@2023-10-01-previe
 }
 
 output aiStudioServiceId string = aiStudioService.id
+output aiStudioServiceName string = aiStudioService.name

@@ -29,5 +29,6 @@ resource pepsubnet 'Microsoft.Network/virtualNetworks/subnets@2022-05-01' = {
   }
 }
 
+output vnetName string = vnet.name
 output vnetId string = vnet.id
 output pepSubnetId string = pepsubnet.id

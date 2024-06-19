@@ -3,7 +3,6 @@ param location string
 param tags object
 param storageSkuName string
 
-
 resource storageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' = {
   name: storageAccountName
   location: location
@@ -49,3 +48,5 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' = {
   }
 }
 
+output storageAccountName string = storageAccount.name
+output storageAccountId string = storageAccount.id
