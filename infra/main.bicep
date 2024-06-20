@@ -113,7 +113,7 @@ param applicationInsightsId string = ''
   'existing'
   'none'
 ])
-param aiStudioContainerRegistryOption string = 'existing'
+param aiStudioContainerRegistryOption string = 'new'
 @description('Managed network settings to be used for the workspace. If not specified, isolation mode Disabled is the default')
 param aiStudioManagedNetwork object = {
   isolationMode: 'AllowInternetOutbound'
@@ -122,7 +122,7 @@ param aiStudioManagedNetwork object = {
 param aiStudioPublicNetworkAccess string = 'Disabled'
 
 // vpn
-param deployVpnResources bool = false
+param deployVpnResources bool = true
 
 // ##########################################
 // Resources
@@ -137,6 +137,7 @@ module vnet 'modules/vnet.bicep' = {
     tagValues: tagValues
     addressPrefixes: addressPrefixes
     subnetName: !empty(subnetName) ? subnetName : '${abbrs.networkVirtualNetworksSubnets}${name}${uniqueSuffix}'
+    subnetPrivateDnsResolverName: '${abbrs.networkPrivateDnsResolver}${name}${uniqueSuffix}' // for vpn purpose
     subnetPrefix: subnetPrefix
     serviceEndpointsAll: serviceEndpointsAll
   }
@@ -253,6 +254,12 @@ module aiStudio 'modules/aiStudioWithInternet.bicep' = {
 module vpnAccess 'modules/vpnAccess.bicep' = if (deployVpnResources) {
   name: 'vpnAccess'
   params: {
+    location: location
+    gatewaySubnetId: vnet.outputs.gatewaySubnetId
+    privateDnsResolverSubnetId: vnet.outputs.privateDnsResolverSubnetId
+    publicIpName: '${abbrs.networkPublicIPAddresses}${name}${uniqueSuffix}'
+    vpnGatewayName: '${abbrs.networkVirtualNetworkGateways}${name}${uniqueSuffix}'
+    resolverName: '${abbrs.networkPrivateDnsResolver}${name}${uniqueSuffix}'
     vnetName: vnet.outputs.vnetName
   }
 }
