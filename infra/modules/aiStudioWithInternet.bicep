@@ -113,3 +113,5 @@ resource searchConnection 'Microsoft.MachineLearningServices/workspaces/connecti
     }
   }
 }
+
+output workspaceId string = workspace.id

@@ -121,6 +121,9 @@ param aiStudioManagedNetwork object = {
 @description('Specifies whether the workspace can be accessed by public networks or not.')
 param aiStudioPublicNetworkAccess string = 'Disabled'
 
+// private endpoints
+param privateEndpointName string = ''
+
 // vpn
 param deployVpnResources bool = true
 
@@ -247,6 +250,21 @@ module aiStudio 'modules/aiStudioWithInternet.bicep' = {
     publicNetworkAccess: aiStudioPublicNetworkAccess
     aiSearchName: azureSearch.outputs.searchName
     aiStudioService: aiStudioService.outputs.aiStudioServiceName
+  }
+}
+
+// private endpoints
+module privateEndpoints 'modules/privateEndpoints.bicep' = {
+  name: 'privateEndpoints'
+  params: {
+    location: location
+    vnetId: vnet.outputs.vnetId
+    vnetName: vnet.outputs.vnetName
+    pepSubnetId: vnet.outputs.pepSubnetId
+    amlWorkspaceId: aiStudio.outputs.workspaceId
+    privateEndpointName: !empty(privateEndpointName)
+      ? privateEndpointName
+      : '${abbrs.privateEndpoint}${name}${uniqueSuffix}'
   }
 }
 
