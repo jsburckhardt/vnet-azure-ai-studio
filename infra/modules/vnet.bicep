@@ -15,6 +15,7 @@ resource vnet 'Microsoft.Network/virtualNetworks@2022-05-01' = {
     addressSpace: {
       addressPrefixes: addressPrefixes
     }
+
     subnets: [
       {
         name: '${subnetName}-pep'
