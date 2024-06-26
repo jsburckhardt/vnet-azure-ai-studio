@@ -48,7 +48,7 @@ param computeInstanceName string
 param location string
 
 @description('Disables local auth when not using ssh')
-param disableLocalAuth bool
+param disableLocalAuth bool = true
 
 @description('Specifies whether SSH access should be enabled for compute instance')
 @allowed([
@@ -501,18 +501,18 @@ param sshAccess string = 'Disabled'
   'Standard_HB60rs'
   'Standard_HB120rs_v2'
 ])
-param vmSize string = 'Standard_DS3_v2'
+param vmSize string = 'Standard_DS11_v2'
 
-@description('Enable root access for assigned to user on compute instance')
-param rootAccess bool
+@description('Specifies who the compute is assigned to. Only they can access it.')
+param assignedUserId string
 
-@description('Enable idle shutdown')
-param idleTimeBeforeShutdown string
+@description('Specifies the tenant of the assigned user.')
+param assignedUserTenant string
 
 @description('Enable or disable node public IP address provisioning')
-param enableNodePublicIp bool
+param enableNodePublicIp bool = false
 
-resource workspaceName_computeInstance 'Microsoft.MachineLearningServices/workspaces/computes@2021-07-01' = {
+resource workspaceName_computeInstance 'Microsoft.MachineLearningServices/workspaces/computes@2024-04-01' = {
   name: '${workspaceName}/${computeInstanceName}'
   location: location
   properties: {
@@ -524,8 +524,13 @@ resource workspaceName_computeInstance 'Microsoft.MachineLearningServices/worksp
       sshSettings: {
         sshPublicAccess: sshAccess
       }
-      rootAccess: rootAccess
-      idleTimeBeforeShutdown: idleTimeBeforeShutdown
+      computeInstanceAuthorizationType: 'personal'
+      personalComputeInstanceSettings: {
+        assignedUser: {
+          objectId: assignedUserId
+          tenantId: assignedUserTenant
+        }
+      }
       enableNodePublicIp: enableNodePublicIp
     }
   }

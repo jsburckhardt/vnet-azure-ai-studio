@@ -125,11 +125,8 @@ param aiStudioPublicNetworkAccess string = 'Disabled'
 param privateEndpointName string = ''
 
 // compute instance
-@description('Specifies the name of the Compute Instance to create under Azure Machine Learning workspace.')
-param computeInstanceName string = ''
-
 @description('Disables local auth when not using ssh')
-param disableLocalAuth bool
+param disableLocalAuth bool = true
 
 @description('Specifies whether SSH access should be enabled for compute instance')
 @allowed([
@@ -584,17 +581,17 @@ param sshAccess string = 'Disabled'
 ])
 param vmSize string = 'Standard_DS3_v2'
 
-@description('Enable root access for assigned to user on compute instance')
-param rootAccess bool
+@description('Specifies who the compute is assigned to. Only they can access it.')
+param assignedUserId string = 'c11b4b66-d260-4a64-b8aa-2b49fa379213'
 
-@description('Enable idle shutdown')
-param idleTimeBeforeShutdown string
+@description('Specifies the tenant of the assigned user.')
+param assignedUserTenant string = '16b3c013-d300-468d-ac64-7eda0820b6d3'
 
 @description('Enable or disable node public IP address provisioning')
-param enableNodePublicIp bool
+param enableNodePublicIp bool = false
 
 // vpn
-param deployVpnResources bool = true
+param deployVpnResources bool = false
 
 // ##########################################
 // Resources
@@ -738,17 +735,18 @@ module privateEndpoints 'modules/privateEndpoints.bicep' = {
 }
 
 // compute instances to share across projects
-module computeInstances 'modules/computeInstances.bicep' = {
+module computeInstanceJuan 'modules/aiStudioComputeInstance.bicep' = {
   name: 'computeInstances'
   params: {
-    workspaceName:
+    workspaceName: aiStudio.name
+    computeInstanceName: 'juanburckhardt3'
     location: location
-    disableLocalAuth:
-    sshAccess:
-    vmSize:
-    rootAccess:
-    idleTimeBeforeShutdown:
-    enableNodePublicIp:
+    disableLocalAuth: disableLocalAuth
+    sshAccess: sshAccess
+    vmSize: vmSize
+    assignedUserId: assignedUserId
+    assignedUserTenant: assignedUserTenant
+    enableNodePublicIp: enableNodePublicIp
   }
 }
 
