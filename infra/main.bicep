@@ -139,10 +139,10 @@ param sshAccess string = 'Disabled'
 param vmSize string = 'Standard_DS3_v2'
 
 @description('Specifies who the compute is assigned to. Only they can access it.')
-param assignedUserId string = 'c11b4b66-d260-4a64-b8aa-2b49fa379213'
+param assignedUserId string
 
 @description('Specifies the tenant of the assigned user.')
-param assignedUserTenant string = '16b3c013-d300-468d-ac64-7eda0820b6d3'
+param assignedUserTenant string
 
 @description('Enable or disable node public IP address provisioning')
 param enableNodePublicIp bool = false
@@ -301,7 +301,6 @@ module privateEndpoints 'modules/privateEndpoints.bicep' = {
       : '${abbrs.privateEndpoint}${name}${uniqueSuffix}'
   }
 }
-// to openai
 
 // compute instances to share across projects
 module computeInstanceJuan 'modules/aiStudioComputeInstance.bicep' = {

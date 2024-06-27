@@ -76,7 +76,7 @@ resource srchPrivateEndpoint 'Microsoft.Network/privateEndpoints@2021-05-01' = {
 }
 
 // azure storage blob
-resource storagePrivateEndpoint 'Microsoft.Network/privateEndpoints@2021-05-01' = {
+resource blobPrivateEndpoint 'Microsoft.Network/privateEndpoints@2021-05-01' = {
   name: '${privateEndpointName}-blob'
   location: location
   properties: {
@@ -90,6 +90,27 @@ resource storagePrivateEndpoint 'Microsoft.Network/privateEndpoints@2021-05-01' 
           privateLinkServiceId: storageId
           groupIds: [
             'blob'
+          ]
+        }
+      }
+    ]
+  }
+}
+
+// azure storage file
+resource filePrivateEndpoint 'Microsoft.Network/privateEndpoints@2021-05-01' = {
+  name: '${privateEndpointName}-file'
+  location: location
+  properties: {
+    subnet: {
+      id: pepSubnetId
+    }
+    privateLinkServiceConnections: [
+      {
+        name: 'storage'
+        properties: {
+          privateLinkServiceId: storageId
+          groupIds: [
             'file'
           ]
         }
@@ -297,10 +318,10 @@ resource srchDnsZoneGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneGrou
   }
 }
 
-// storage
-resource storageDnsZoneGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2021-05-01' = {
+// storage blob
+resource blobDnsZoneGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2021-05-01' = {
   name: 'blobzonegroup'
-  parent: storagePrivateEndpoint
+  parent: blobPrivateEndpoint
   properties: {
     privateDnsZoneConfigs: [
       {
@@ -309,6 +330,16 @@ resource storageDnsZoneGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneG
           privateDnsZoneId: blobPrivateDnsZone.id
         }
       }
+    ]
+  }
+}
+
+// storage file
+resource fileDnsZoneGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2021-05-01' = {
+  name: 'filezonegroup'
+  parent: filePrivateEndpoint
+  properties: {
+    privateDnsZoneConfigs: [
       {
         name: 'privatelink.file.${environment().suffixes.storage}'
         properties: {

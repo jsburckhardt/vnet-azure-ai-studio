@@ -512,8 +512,13 @@ param assignedUserTenant string
 @description('Enable or disable node public IP address provisioning')
 param enableNodePublicIp bool = false
 
+resource workspace 'Microsoft.MachineLearningServices/workspaces@2024-04-01' existing = {
+  name: workspaceName
+}
+
 resource workspaceName_computeInstance 'Microsoft.MachineLearningServices/workspaces/computes@2024-04-01' = {
-  name: '${workspaceName}/${computeInstanceName}'
+  parent: workspace
+  name: computeInstanceName
   location: location
   properties: {
     computeType: 'ComputeInstance'
