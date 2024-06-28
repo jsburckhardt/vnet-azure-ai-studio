@@ -3,7 +3,7 @@ param workspaceName string
 param friendlyName string = workspaceName
 param description string = ''
 param location string
-param kind string = 'Default'
+param kind string = 'Hub'
 param identityType string = 'systemAssigned'
 param primaryUserAssignedIdentityResourceGroup string = resourceGroup().name
 param primaryUserAssignedIdentityName string = ''
@@ -115,3 +115,4 @@ resource searchConnection 'Microsoft.MachineLearningServices/workspaces/connecti
 }
 
 output workspaceId string = workspace.id
+output workspaceName string = workspace.name

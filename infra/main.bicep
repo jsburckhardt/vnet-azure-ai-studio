@@ -124,8 +124,37 @@ param aiStudioPublicNetworkAccess string = 'Disabled'
 // private endpoints
 param privateEndpointName string = ''
 
+// compute instance
+@description('Disables local auth when not using ssh')
+param disableLocalAuth bool = true
+
+@description('Specifies whether SSH access should be enabled for compute instance')
+@allowed([
+  'Disabled'
+  'Enabled'
+])
+param sshAccess string = 'Disabled'
+
+@description('Specifies the VM size of the Compute Instance to create under Azure Machine Learning workspace.')
+param vmSize string = 'Standard_DS3_v2'
+
+@description('Specifies the name of the Compute Instance to create under Azure Machine Learning workspace.')
+param computeInstanceName string
+
+@description('Specifies who the compute is assigned to. Only they can access it.')
+param assignedUserId string
+
+@description('Specifies the tenant of the assigned user.')
+param assignedUserTenant string
+
+@description('Enable or disable node public IP address provisioning')
+param enableNodePublicIp bool = false
+
 // vpn
-param deployVpnResources bool = true
+param deployVpnResources bool = false
+param enablevpn bool = false
+param vpnVnetName string = ''
+param vpnVnetResourceGroupName string = ''
 
 // ##########################################
 // Resources
@@ -251,9 +280,17 @@ module aiStudio 'modules/aiStudioWithInternet.bicep' = {
     aiSearchName: azureSearch.outputs.searchName
     aiStudioService: aiStudioService.outputs.aiStudioServiceName
   }
+  dependsOn: [
+    storage
+    keyVault
+    aiStudioService
+    acr
+    azureSearch
+  ]
 }
 
 // private endpoints
+// to studio
 module privateEndpoints 'modules/privateEndpoints.bicep' = {
   name: 'privateEndpoints'
   params: {
@@ -262,9 +299,31 @@ module privateEndpoints 'modules/privateEndpoints.bicep' = {
     vnetName: vnet.outputs.vnetName
     pepSubnetId: vnet.outputs.pepSubnetId
     amlWorkspaceId: aiStudio.outputs.workspaceId
+    aiStudioServiceId: aiStudioService.outputs.aiStudioServiceId
+    srchServiceId: azureSearch.outputs.searchId
+    storageId: storage.outputs.storageAccountId
     privateEndpointName: !empty(privateEndpointName)
       ? privateEndpointName
       : '${abbrs.privateEndpoint}${name}${uniqueSuffix}'
+    enablevpn: enablevpn
+    vpnVnetName: vpnVnetName
+    vpnVnetResourceGroupName: vpnVnetResourceGroupName
+  }
+}
+
+// compute instances to share across projects
+module computeInstanceSample 'modules/aiStudioComputeInstance.bicep' = {
+  name: 'computeInstances'
+  params: {
+    workspaceName: aiStudio.outputs.workspaceName
+    computeInstanceName: computeInstanceName
+    location: location
+    disableLocalAuth: disableLocalAuth
+    sshAccess: sshAccess
+    vmSize: vmSize
+    assignedUserId: assignedUserId
+    assignedUserTenant: assignedUserTenant
+    enableNodePublicIp: enableNodePublicIp
   }
 }
 
