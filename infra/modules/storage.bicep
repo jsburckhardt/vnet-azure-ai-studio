@@ -1,6 +1,7 @@
 param storageAccountName string
 param location string
 param tags object
+param publicNetworkAccess string = 'Disabled'
 param storageSkuName string
 
 resource storageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' = {
@@ -16,6 +17,7 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' = {
     minimumTlsVersion: 'TLS1_2'
     allowBlobPublicAccess: false
     allowCrossTenantReplication: false
+    publicNetworkAccess: publicNetworkAccess
     allowSharedKeyAccess: true
     encryption: {
       keySource: 'Microsoft.Storage'

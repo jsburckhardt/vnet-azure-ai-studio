@@ -138,6 +138,9 @@ param sshAccess string = 'Disabled'
 @description('Specifies the VM size of the Compute Instance to create under Azure Machine Learning workspace.')
 param vmSize string = 'Standard_DS3_v2'
 
+@description('Specifies the name of the Compute Instance to create under Azure Machine Learning workspace.')
+param computeInstanceName string
+
 @description('Specifies who the compute is assigned to. Only they can access it.')
 param assignedUserId string
 
@@ -149,6 +152,9 @@ param enableNodePublicIp bool = false
 
 // vpn
 param deployVpnResources bool = false
+param enablevpn bool = false
+param vpnVnetName string = ''
+param vpnVnetResourceGroupName string = ''
 
 // ##########################################
 // Resources
@@ -299,15 +305,18 @@ module privateEndpoints 'modules/privateEndpoints.bicep' = {
     privateEndpointName: !empty(privateEndpointName)
       ? privateEndpointName
       : '${abbrs.privateEndpoint}${name}${uniqueSuffix}'
+    enablevpn: enablevpn
+    vpnVnetName: vpnVnetName
+    vpnVnetResourceGroupName: vpnVnetResourceGroupName
   }
 }
 
 // compute instances to share across projects
-module computeInstanceJuan 'modules/aiStudioComputeInstance.bicep' = {
+module computeInstanceSample 'modules/aiStudioComputeInstance.bicep' = {
   name: 'computeInstances'
   params: {
     workspaceName: aiStudio.outputs.workspaceName
-    computeInstanceName: 'juanburckhardt3'
+    computeInstanceName: computeInstanceName
     location: location
     disableLocalAuth: disableLocalAuth
     sshAccess: sshAccess

@@ -349,3 +349,106 @@ resource fileDnsZoneGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneGrou
     ]
   }
 }
+
+
+
+// Link the DNS zone to the virtual network VPN:
+param enablevpn bool = false
+param vpnVnetName string = ''
+param vpnVnetResourceGroupName string = ''
+
+// aistudio
+resource vpnVnet 'Microsoft.Network/virtualNetworks@2020-11-01' existing = if(enablevpn) {
+  name: vpnVnetName
+  scope: resourceGroup(vpnVnetResourceGroupName)
+}
+
+var vpnVnetId = vpnVnet.id
+
+resource azuremlVirtualNetworkLinkVpn 'Microsoft.Network/privateDnsZones/virtualNetworkLinks@2020-06-01' = if(enablevpn) {
+  name: '${vnetName}-azureml-link-vpn'
+  parent: azuremlPrivateDnsZone
+  location: 'global'
+  properties: {
+    virtualNetwork: {
+      id: vpnVnetId
+    }
+    registrationEnabled: false
+  }
+}
+
+resource notebooksVirtualNetworkLinkVpn 'Microsoft.Network/privateDnsZones/virtualNetworkLinks@2020-06-01' = if(enablevpn) {
+  name: '${vnetName}-notebooks-link-vpn'
+  parent: notebooksPrivateDnsZone
+  location: 'global'
+  properties: {
+    virtualNetwork: {
+      id: vpnVnetId
+    }
+    registrationEnabled: false
+  }
+}
+
+// aoai
+resource cognitiveServicesVirtualNetworkLinkVpn 'Microsoft.Network/privateDnsZones/virtualNetworkLinks@2020-06-01' = if(enablevpn) {
+  name: '${vnetName}-cog-link-vpn'
+  parent: cognitiveServicesPrivateDnsZone
+  location: 'global'
+  properties: {
+    virtualNetwork: {
+      id: vpnVnetId
+    }
+    registrationEnabled: false
+  }
+}
+
+resource aoaiVirtualNetworkLinkVpn 'Microsoft.Network/privateDnsZones/virtualNetworkLinks@2020-06-01' = if(enablevpn) {
+  name: '${vnetName}-aoai-link-vpn'
+  parent: aoaiPrivateDnsZone
+  location: 'global'
+  properties: {
+    virtualNetwork: {
+      id: vpnVnetId
+    }
+    registrationEnabled: false
+  }
+}
+
+// srch
+resource srchVirtualNetworkLinkVpn 'Microsoft.Network/privateDnsZones/virtualNetworkLinks@2020-06-01' = if(enablevpn) {
+  name: '${vnetName}-srch-link-vpn'
+  parent: srchPrivateDnsZone
+  location: 'global'
+  properties: {
+    virtualNetwork: {
+      id: vpnVnetId
+    }
+    registrationEnabled: false
+  }
+}
+
+// storage blob
+resource blobVirtualNetworkLinkVpn 'Microsoft.Network/privateDnsZones/virtualNetworkLinks@2020-06-01' = if(enablevpn) {
+  name: '${vnetName}-st-blob-link-vpn'
+  parent: blobPrivateDnsZone
+  location: 'global'
+  properties: {
+    virtualNetwork: {
+      id: vpnVnetId
+    }
+    registrationEnabled: false
+  }
+}
+
+// storage file
+resource fileVirtualNetworkLinkVpn 'Microsoft.Network/privateDnsZones/virtualNetworkLinks@2020-06-01' = if(enablevpn) {
+  name: '${vnetName}-st-file-link-vpn'
+  parent: filePrivateDnsZone
+  location: 'global'
+  properties: {
+    virtualNetwork: {
+      id: vpnVnetId
+    }
+    registrationEnabled: false
+  }
+}
