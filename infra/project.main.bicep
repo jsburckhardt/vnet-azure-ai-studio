@@ -1,11 +1,11 @@
 @description('The AI Studio Hub Resource name')
-param name string = 'asktelstra2'
+param name string = 'atv2'
 @description('The display name of the AI Studio Hub Resource')
-param displayName string = 'asktelstra2'
+param displayName string = 'atv2'
 @description('The name of the AI Studio Hub Resource where this project should be created')
-param hubName string = 'cog-gbb5zsvou'
+param hubName string = 'cog-mvaipvq43k'
 @description('The name of the key vault resource to grant access to the project')
-param keyVaultName string = 'kv-gbb5zsvou'
+param keyVaultName string = 'kv-mvaipvq43k'
 
 @description('The SKU name to use for the AI Studio Hub Resource')
 param skuName string = 'Basic'

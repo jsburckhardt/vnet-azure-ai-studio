@@ -47,6 +47,6 @@ param assignedUserId = 'c11b4b66-d260-4a64-b8aa-2b49fa379213'
 param assignedUserTenant = '16b3c013-d300-468d-ac64-7eda0820b6d3'
 param enableNodePublicIp = false
 param deployVpnResources = false
-param enablevpn = true
+param enablevpn = false
 param vpnVnetName = 'vnet-secure-ai-studio-vpn'
 param vpnVnetResourceGroupName = 'secure-ai-studio-vnp'
