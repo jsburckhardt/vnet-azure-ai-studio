@@ -1,20 +1,26 @@
+targetScope = 'subscription'
+
 // ##########################################
 // Params
 // ##########################################
 
 // Global
+@description('Resource group name')
+param rgName string = ''
+
 @description('Deployment name - identifier')
 param prefix string
 
 @minLength(1)
 @description('Primary location for all resources')
-param location string = resourceGroup().location
+param location string
 
 @description('Tags for workspace, will also be populated if provisioning new dependent resources.')
 param tagValues object = {}
 
 var abbrs = loadJsonContent('abbreviations.json')
-var uniqueSuffix = substring(uniqueString(resourceGroup().id), 0, 5)
+var rgNameVar = !empty(rgName) ? rgName : '${abbrs.resourcesResourceGroups}${name}'
+var uniqueSuffix = substring(uniqueString(rgNameVar), 0, 5)
 var name = toLower('${prefix}')
 var tenantId = subscription().tenantId
 
@@ -151,18 +157,26 @@ param assignedUserTenant string
 param enableNodePublicIp bool = false
 
 // vpn
-param deployVpnResources bool = false
-param enablevpn bool = false
-param vpnVnetName string = ''
-param vpnVnetResourceGroupName string = ''
+// param deployVpnResources bool = false
+// param enablevpn bool = false
+// param vpnVnetName string = ''
+// param vpnVnetResourceGroupName string = ''
 
 // ##########################################
 // Resources
 // ##########################################
 
+// Resource Group
+resource rg 'Microsoft.Resources/resourceGroups@2021-04-01' = {
+  name: '${rgNameVar}${uniqueSuffix}'
+  location: location
+  tags: tagValues
+}
+
 // VNET
 module vnet 'modules/vnet.bicep' = {
   name: 'vnet'
+  scope: rg
   params: {
     vnetName: !empty(vnetName) ? vnetName : '${abbrs.virtualNetworks}${name}${uniqueSuffix}'
     location: location
@@ -178,6 +192,7 @@ module vnet 'modules/vnet.bicep' = {
 // Key Vault
 module keyVault 'modules/keyvault.bicep' = {
   name: 'keyvault'
+  scope: rg
   params: {
     name: !empty(keyVaultName) ? keyVaultName : '${abbrs.keyVaultVaults}${name}${uniqueSuffix}'
     location: location
@@ -203,6 +218,7 @@ module keyVault 'modules/keyvault.bicep' = {
 // AI Studio Service
 module aiStudioService 'modules/aiStudioService.bicep' = {
   name: 'aiStudioService'
+  scope: rg
   params: {
     name: !empty(aiStudioSerivceName)
       ? aiStudioSerivceName
@@ -217,6 +233,7 @@ module aiStudioService 'modules/aiStudioService.bicep' = {
 // ACR
 module acr 'modules/acr.bicep' = {
   name: 'acr'
+  scope: rg
   params: {
     containerRegistryName: !empty(containerRegistryName)
       ? containerRegistryName
@@ -232,6 +249,7 @@ module acr 'modules/acr.bicep' = {
 // Azure Search
 module azureSearch 'modules/azureSearch.bicep' = {
   name: 'azureSearch'
+  scope: rg
   params: {
     searchName: !empty(searchName) ? searchName : '${abbrs.searchSearchServices}${name}${uniqueSuffix}'
     location: location
@@ -244,6 +262,7 @@ module azureSearch 'modules/azureSearch.bicep' = {
 // Azure Storage
 module storage 'modules/storage.bicep' = {
   name: 'azureStorage'
+  scope: rg
   params: {
     location: location
     storageAccountName: !empty(storageAccountName)
@@ -257,6 +276,7 @@ module storage 'modules/storage.bicep' = {
 // AI Studio
 module aiStudio 'modules/aiStudioWithInternet.bicep' = {
   name: 'aiStudio'
+  scope: rg
   params: {
     tagValues: tagValues
     workspaceName: !empty(aiStudioWorkspaceName)
@@ -293,6 +313,7 @@ module aiStudio 'modules/aiStudioWithInternet.bicep' = {
 // to studio
 module privateEndpoints 'modules/privateEndpoints.bicep' = {
   name: 'privateEndpoints'
+  scope: rg
   params: {
     location: location
     vnetId: vnet.outputs.vnetId
@@ -305,15 +326,16 @@ module privateEndpoints 'modules/privateEndpoints.bicep' = {
     privateEndpointName: !empty(privateEndpointName)
       ? privateEndpointName
       : '${abbrs.privateEndpoint}${name}${uniqueSuffix}'
-    enablevpn: enablevpn
-    vpnVnetName: vpnVnetName
-    vpnVnetResourceGroupName: vpnVnetResourceGroupName
+    // enablevpn: enablevpn
+    // vpnVnetName: vpnVnetName
+    // vpnVnetResourceGroupName: vpnVnetResourceGroupName
   }
 }
 
 // compute instances to share across projects
 module computeInstanceSample 'modules/aiStudioComputeInstance.bicep' = {
   name: 'computeInstances'
+  scope: rg
   params: {
     workspaceName: aiStudio.outputs.workspaceName
     computeInstanceName: computeInstanceName
@@ -328,18 +350,19 @@ module computeInstanceSample 'modules/aiStudioComputeInstance.bicep' = {
 }
 
 // not required for real env - just for testing - vpn=true
-module vpnAccess 'modules/vpnAccess.bicep' = if (deployVpnResources) {
-  name: 'vpnAccess'
-  params: {
-    location: location
-    gatewaySubnetId: vnet.outputs.gatewaySubnetId
-    privateDnsResolverSubnetId: vnet.outputs.privateDnsResolverSubnetId
-    publicIpName: '${abbrs.networkPublicIPAddresses}${name}${uniqueSuffix}'
-    vpnGatewayName: '${abbrs.networkVirtualNetworkGateways}${name}${uniqueSuffix}'
-    resolverName: '${abbrs.networkPrivateDnsResolver}${name}${uniqueSuffix}'
-    vnetName: vnet.outputs.vnetName
-  }
-}
+// module vpnAccess 'modules/vpnAccess.bicep' = if (deployVpnResources) {
+//   name: 'vpnAccess'
+//   scope: rg
+//   params: {
+//     location: location
+//     gatewaySubnetId: vnet.outputs.gatewaySubnetId
+//     privateDnsResolverSubnetId: vnet.outputs.privateDnsResolverSubnetId
+//     publicIpName: '${abbrs.networkPublicIPAddresses}${name}${uniqueSuffix}'
+//     vpnGatewayName: '${abbrs.networkVirtualNetworkGateways}${name}${uniqueSuffix}'
+//     resolverName: '${abbrs.networkPrivateDnsResolver}${name}${uniqueSuffix}'
+//     vnetName: vnet.outputs.vnetName
+//   }
+// }
 
 // ##########################################
 // Outputs
