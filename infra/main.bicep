@@ -19,9 +19,9 @@ param location string
 param tagValues object = {}
 
 var abbrs = loadJsonContent('abbreviations.json')
+var name = toLower('${prefix}')
 var rgNameVar = !empty(rgName) ? rgName : '${abbrs.resourcesResourceGroups}${name}'
 var uniqueSuffix = substring(uniqueString(rgNameVar), 0, 5)
-var name = toLower('${prefix}')
 var tenantId = subscription().tenantId
 
 // VNET params
@@ -131,6 +131,9 @@ param aiStudioPublicNetworkAccess string = 'Disabled'
 param privateEndpointName string = ''
 
 // compute instance
+@description('The configuration file containing Compute Instance details.')
+param ciConfig object
+
 @description('Disables local auth when not using ssh')
 param disableLocalAuth bool = true
 
@@ -144,23 +147,8 @@ param sshAccess string = 'Disabled'
 @description('Specifies the VM size of the Compute Instance to create under Azure Machine Learning workspace.')
 param vmSize string = 'Standard_DS3_v2'
 
-@description('Specifies the name of the Compute Instance to create under Azure Machine Learning workspace.')
-param computeInstanceName string
-
-@description('Specifies who the compute is assigned to. Only they can access it.')
-param assignedUserId string
-
-@description('Specifies the tenant of the assigned user.')
-param assignedUserTenant string
-
 @description('Enable or disable node public IP address provisioning')
 param enableNodePublicIp bool = false
-
-// vpn
-// param deployVpnResources bool = false
-// param enablevpn bool = false
-// param vpnVnetName string = ''
-// param vpnVnetResourceGroupName string = ''
 
 // ##########################################
 // Resources
@@ -168,7 +156,7 @@ param enableNodePublicIp bool = false
 
 // Resource Group
 resource rg 'Microsoft.Resources/resourceGroups@2021-04-01' = {
-  name: '${rgNameVar}${uniqueSuffix}'
+  name: '${rgNameVar}-${uniqueSuffix}'
   location: location
   tags: tagValues
 }
@@ -333,36 +321,23 @@ module privateEndpoints 'modules/privateEndpoints.bicep' = {
 }
 
 // compute instances to share across projects
-module computeInstanceSample 'modules/aiStudioComputeInstance.bicep' = {
-  name: 'computeInstances'
-  scope: rg
-  params: {
-    workspaceName: aiStudio.outputs.workspaceName
-    computeInstanceName: computeInstanceName
-    location: location
-    disableLocalAuth: disableLocalAuth
-    sshAccess: sshAccess
-    vmSize: vmSize
-    assignedUserId: assignedUserId
-    assignedUserTenant: assignedUserTenant
-    enableNodePublicIp: enableNodePublicIp
+module computeInstance 'modules/aiStudioComputeInstance.bicep' = [
+  for ci in ciConfig.cis: {
+    name: ci.name
+    scope: rg
+    params: {
+      workspaceName: aiStudio.outputs.workspaceName
+      computeInstanceName: ci.name
+      location: location
+      disableLocalAuth: disableLocalAuth
+      sshAccess: sshAccess
+      vmSize: vmSize
+      assignedUserId: ci.assignedUserId
+      assignedUserTenant: ci.assignedUserTenant
+      enableNodePublicIp: enableNodePublicIp
+    }
   }
-}
-
-// not required for real env - just for testing - vpn=true
-// module vpnAccess 'modules/vpnAccess.bicep' = if (deployVpnResources) {
-//   name: 'vpnAccess'
-//   scope: rg
-//   params: {
-//     location: location
-//     gatewaySubnetId: vnet.outputs.gatewaySubnetId
-//     privateDnsResolverSubnetId: vnet.outputs.privateDnsResolverSubnetId
-//     publicIpName: '${abbrs.networkPublicIPAddresses}${name}${uniqueSuffix}'
-//     vpnGatewayName: '${abbrs.networkVirtualNetworkGateways}${name}${uniqueSuffix}'
-//     resolverName: '${abbrs.networkPrivateDnsResolver}${name}${uniqueSuffix}'
-//     vnetName: vnet.outputs.vnetName
-//   }
-// }
+]
 
 // ##########################################
 // Outputs
