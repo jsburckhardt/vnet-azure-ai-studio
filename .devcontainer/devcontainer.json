@@ -52,7 +52,7 @@
 			"settings": {
 				"files.insertFinalNewline": true,
 				"github.copilot.enable": {
-					"markdown": "true"
+					"markdown": true
 				},
 				"terminal.integrated.defaultProfile.linux": "zsh"
 			}
