@@ -11,7 +11,7 @@ deployment:
 
 
 project:
-	az deployment sub show --name aistudio-managed-vnet --query properties.outputs > hub.output.json \
+	az deployment sub show --name aistudio-managed-vnet --query properties.outputs > hub.output.json
 	hubName=$$(jq -r '.hubName.value' hub.output.json); \
 	kvName=$$(jq -r '.keyVaultName.value' hub.output.json); \
 	rgName=$$(jq -r '.rgName.value' hub.output.json); \
