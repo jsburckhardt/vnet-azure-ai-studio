@@ -6,6 +6,7 @@ param amlWorkspaceId string
 param aiStudioServiceId string
 param srchServiceId string
 param storageId string
+param registryId string
 param location string
 
 // Create the private endpoins for:
@@ -119,6 +120,28 @@ resource filePrivateEndpoint 'Microsoft.Network/privateEndpoints@2021-05-01' = {
   }
 }
 
+// ACR
+resource acrPrivateEndpoint 'Microsoft.Network/privateEndpoints@2021-05-01' = {
+  name: '${privateEndpointName}-acr'
+  location: location
+  properties: {
+    subnet: {
+      id: pepSubnetId
+    }
+    privateLinkServiceConnections: [
+      {
+        name: 'registries'
+        properties: {
+          privateLinkServiceId: registryId
+          groupIds: [
+            'registry'
+          ]
+        }
+      }
+    ]
+  }
+}
+
 // Create the private DNS zone for:
 // studio
 resource azuremlPrivateDnsZone 'Microsoft.Network/privateDnsZones@2020-06-01' = {
@@ -163,6 +186,13 @@ resource blobPrivateDnsZone 'Microsoft.Network/privateDnsZones@2020-06-01' = {
 // storage file
 resource filePrivateDnsZone 'Microsoft.Network/privateDnsZones@2020-06-01' = {
   name: 'privatelink.file.${environment().suffixes.storage}'
+  location: 'global'
+  properties: {}
+}
+
+// acr
+resource acrPrivateDnsZone 'Microsoft.Network/privateDnsZones@2020-06-01' = {
+  name: 'privatelink.azurecr.io'
   location: 'global'
   properties: {}
 }
@@ -248,6 +278,19 @@ resource blobVirtualNetworkLink 'Microsoft.Network/privateDnsZones/virtualNetwor
 resource fileVirtualNetworkLink 'Microsoft.Network/privateDnsZones/virtualNetworkLinks@2020-06-01' = {
   name: '${vnetName}-st-file-link'
   parent: filePrivateDnsZone
+  location: 'global'
+  properties: {
+    virtualNetwork: {
+      id: vnetId
+    }
+    registrationEnabled: false
+  }
+}
+
+// acr
+resource acrVirtualNetworkLink 'Microsoft.Network/privateDnsZones/virtualNetworkLinks@2020-06-01' = {
+  name: '${vnetName}-acr-link'
+  parent: acrPrivateDnsZone
   location: 'global'
   properties: {
     virtualNetwork: {
@@ -344,6 +387,22 @@ resource fileDnsZoneGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneGrou
         name: 'privatelink.file.${environment().suffixes.storage}'
         properties: {
           privateDnsZoneId: filePrivateDnsZone.id
+        }
+      }
+    ]
+  }
+}
+
+// acr
+resource acrDnsZoneGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2021-05-01' = {
+  name: 'acrzonegroup'
+  parent: acrPrivateEndpoint
+  properties: {
+    privateDnsZoneConfigs: [
+      {
+        name: 'privatelink.azurecr.io'
+        properties: {
+          privateDnsZoneId: acrPrivateDnsZone.id
         }
       }
     ]

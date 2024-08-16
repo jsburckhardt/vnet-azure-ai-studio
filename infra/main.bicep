@@ -161,6 +161,16 @@ resource rg 'Microsoft.Resources/resourceGroups@2021-04-01' = {
   tags: tagValues
 }
 
+// // NEED TO CONFIRM THIS ROLE
+module azuremachinelearningroleassignment 'modules/role.bicep' = {
+  name: 'azuremachinelearningrole'
+  scope: rg
+  params: {
+    principalId: '02bef2cc-1387-4918-b91d-bbfc606fb7ed'
+    roleDefinitionId: 'b24988ac-6180-42a0-ab88-20f7382dd24c'
+  }
+}
+
 // VNET
 module vnet 'modules/vnet.bicep' = {
   name: 'vnet'
@@ -311,12 +321,10 @@ module privateEndpoints 'modules/privateEndpoints.bicep' = {
     aiStudioServiceId: aiStudioService.outputs.aiStudioServiceId
     srchServiceId: azureSearch.outputs.searchId
     storageId: storage.outputs.storageAccountId
+    registryId: acr.outputs.registryId
     privateEndpointName: !empty(privateEndpointName)
       ? privateEndpointName
       : '${abbrs.privateEndpoint}${name}${uniqueSuffix}'
-    // enablevpn: enablevpn
-    // vpnVnetName: vpnVnetName
-    // vpnVnetResourceGroupName: vpnVnetResourceGroupName
   }
 }
 
@@ -333,20 +341,47 @@ module computeInstance 'modules/aiStudioComputeInstance.bicep' = [
       sshAccess: sshAccess
       vmSize: vmSize
       assignedUserId: ci.assignedUserId
-      assignedUserTenant: ci.assignedUserTenant
+      assignedUserTenant: tenantId
       enableNodePublicIp: enableNodePublicIp
     }
+    dependsOn: [
+      aiStudio
+      privateEndpoints
+    ]
   }
 ]
+
+// ##########################################
+// Roles based on https://review.learn.microsoft.com/en-us/azure/ai-studio/how-to/secure-data-playground?branch=pr-en-us-280529
+// ##########################################
+
+module rolesSecureDataPlayground 'modules/roleAssignments.bicep' = {
+  scope: rg
+  name: 'roleSearchIndexDataReader'
+  params: {
+    aiStudioServiceName: aiStudioService.outputs.aiStudioServiceName
+    searchName: azureSearch.outputs.searchName
+    storageAccountName: storage.outputs.storageAccountName
+  }
+  dependsOn: [
+    aiStudio
+    azureSearch
+    storage
+  ]
+}
 
 // ##########################################
 // Outputs
 // ##########################################
 
-// vent
+// hub
+output hubName string = aiStudio.outputs.workspaceName
+output hubId string = aiStudio.outputs.workspaceId
+// vnet
 output vnetId string = vnet.outputs.vnetId
 output pepSubnetId string = vnet.outputs.pepSubnetId
 // keyvault
+output keyVaultName string = keyVault.outputs.keyVaultName
 output keyVaultId string = keyVault.outputs.keyVaultId
 // ai studio service
 output aiStudioServiceId string = aiStudioService.outputs.aiStudioServiceId
@@ -356,3 +391,5 @@ output registryId string = acr.outputs.registryId
 output registryUrl string = acr.outputs.registryUrl
 // azure search
 output searchId string = azureSearch.outputs.searchId
+// resource group name
+output rgName string = rg.name

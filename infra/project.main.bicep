@@ -1,9 +1,9 @@
 // global
 param location string = resourceGroup().location
 @description('The name of the AI Studio Hub Resource')
-param hubName string = 'cog-jb36cbk4'
+param hubName string
 @description('The name of the Key Vault to access')
-param keyVaultName string = 'kv-jb36cbk4'
+param keyVaultName string
 param tags object = {}
 
 @description('The configuration file containing Project details.')
