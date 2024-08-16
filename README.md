@@ -1,7 +1,7 @@
 # Vnet Azure AI Studio
 
-[!CAUTION]
-THIS IS A WORK IN PROGRESS.
+>[!CAUTION]
+>THIS IS A WORK IN PROGRESS.
 
 ## Introduction
 
