@@ -379,6 +379,7 @@ output hubName string = aiStudio.outputs.workspaceName
 output hubId string = aiStudio.outputs.workspaceId
 // vnet
 output vnetId string = vnet.outputs.vnetId
+output vnetName string = vnet.outputs.vnetName
 output pepSubnetId string = vnet.outputs.pepSubnetId
 // keyvault
 output keyVaultName string = keyVault.outputs.keyVaultName
