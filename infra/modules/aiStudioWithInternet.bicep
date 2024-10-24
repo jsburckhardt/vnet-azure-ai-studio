@@ -51,7 +51,7 @@ resource aiStudioServiceResource 'Microsoft.CognitiveServices/accounts@2023-05-0
   name: aiStudioService
 }
 
-resource search 'Microsoft.Search/searchServices@2021-04-01-preview' existing = if (!empty(aiSearchName)) {
+resource search 'Microsoft.Search/searchServices@2024-03-01-preview' existing = if (!empty(aiSearchName)) {
   name: aiSearchName
 }
 
@@ -82,46 +82,44 @@ resource workspace 'Microsoft.MachineLearningServices/workspaces@2024-07-01-prev
   }
 }
 
-// // Contributor role assignment to azure search
-// resource searchContributorRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(aiSearchName)) {
-//   name: guid(subscription().id, resourceGroup().id, aiSearchName, 'Contributor')
-//   properties: {
-//     principalId: search.identity.principalId
-//     principalType: 'ServicePrincipal'
-//     roleDefinitionId: subscriptionResourceId(
-//       'Microsoft.Authorization/roleDefinitions',
-//       'b24988ac-6180-42a0-ab88-20f7382dd24c'
-//     )
-//   }
-// }
-
 resource aiServiceConnection 'Microsoft.MachineLearningServices/workspaces/connections@2024-07-01-preview' = {
-  parent: workspace
   name: '${aiStudioService}-aiservice-connection'
+  parent: workspace
   properties: {
     category: 'AIServices'
     authType: 'AAD'
     isSharedToAll: true
     target: aiStudioServiceResource.properties.endpoints['OpenAI Language Model Instance API']
-    peRequirement: 'Required'
+    // peRequirement: 'Required'
     metadata: {
       ApiVersion: '2023-07-01-preview'
       ApiType: 'azure'
       ResourceId: aiStudioServiceResource.id
     }
   }
+  dependsOn: [
+    aiStudioServiceResource
+  ]
 }
 
 resource searchConnection 'Microsoft.MachineLearningServices/workspaces/connections@2024-07-01-preview' = if (!empty(aiSearchName)) {
-  parent: workspace
   name: '${aiSearchName}-connection'
+  parent: workspace
   properties: {
     category: 'CognitiveSearch'
-    authType: 'AAD'
     isSharedToAll: true
+    authType: 'AAD'
     target: 'https://${search.name}.search.windows.net/'
-    peRequirement: 'Required'
+    // peRequirement: 'Required'
+    metadata: {
+      ApiType: 'azure'
+      ResourceId: search.id
+    }
   }
+  dependsOn: [
+    search
+    aiStudioServiceResource
+  ]
 }
 
 output workspaceId string = workspace.id

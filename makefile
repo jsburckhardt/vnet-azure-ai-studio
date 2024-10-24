@@ -1,4 +1,4 @@
-PREFIX ?= mvaip
+PREFIX ?= caira
 deployment:
 	az deployment sub create --name aistudio-managed-vnet \
 		--location eastus2 \
@@ -21,3 +21,7 @@ project:
 		--parameters hubName=$$hubName \
 		--parameters keyVaultName=$$kvName \
 		--parameters projectConfig=@infra/aiStudioProjects.json
+
+clean-up:
+	rgName=$$(jq -r '.rgName.value' hub.output.json); \
+	az group delete --name $$rgName --yes --no-wait \
