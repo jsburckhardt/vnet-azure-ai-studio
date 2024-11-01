@@ -102,25 +102,25 @@ resource aiServiceConnection 'Microsoft.MachineLearningServices/workspaces/conne
   ]
 }
 
-resource searchConnection 'Microsoft.MachineLearningServices/workspaces/connections@2024-07-01-preview' = if (!empty(aiSearchName)) {
-  name: '${aiSearchName}-connection'
-  parent: workspace
-  properties: {
-    category: 'CognitiveSearch'
-    isSharedToAll: true
-    authType: 'AAD'
-    target: 'https://${search.name}.search.windows.net/'
-    // peRequirement: 'Required'
-    metadata: {
-      ApiType: 'azure'
-      ResourceId: search.id
-    }
-  }
-  dependsOn: [
-    search
-    aiStudioServiceResource
-  ]
-}
+// resource searchConnection 'Microsoft.MachineLearningServices/workspaces/connections@2024-07-01-preview' = if (!empty(aiSearchName)) {
+//   name: '${aiSearchName}-connection'
+//   parent: workspace
+//   properties: {
+//     category: 'CognitiveSearch'
+//     isSharedToAll: true
+//     authType: 'AAD'
+//     target: 'https://${search.name}.search.windows.net/'
+//     // peRequirement: 'Required'
+//     metadata: {
+//       ApiType: 'azure'
+//       ResourceId: search.id
+//     }
+//   }
+//   dependsOn: [
+//     search
+//     aiStudioServiceResource
+//   ]
+// }
 
 output workspaceId string = workspace.id
 output workspaceName string = workspace.name
