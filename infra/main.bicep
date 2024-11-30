@@ -119,11 +119,131 @@ param applicationInsightsId string = ''
   'existing'
   'none'
 ])
+
+@description('Custom FQDN Outbound rules for AllowOnlyApprovedOutbound Managed vNET')
+param customOutboundRules object = {
+  Anaconda: {
+    type: 'FQDN'
+    destination: '*.anaconda.com'
+    category: 'UserDefined'
+  }
+  AnacondaOrg: {
+    type: 'FQDN'
+    destination: '*.anaconda.org'
+    category: 'UserDefined'
+  }
+  Pypi: {
+    type: 'FQDN'
+    destination: 'pypi.org'
+  }
+  PyTorch: {
+    type: 'FQDN'
+    destination: 'pytorch.org'
+  }
+  Pythonhosted: {
+    type: 'FQDN'
+    destination: '*.pythonhosted.org'
+  }
+  PyTorchStar: {
+    type: 'FQDN'
+    destination: '*.pytorch.org'
+  }
+  TensorflowStar: {
+    type: 'FQDN'
+    destination: '*.tensorflow.org'
+  }
+  VsCodeDev: {
+    type: 'FQDN'
+    destination: '*.vscode.dev'
+  }
+  VsCodeBlob: {
+    type: 'FQDN'
+    destination: 'vscode.blob.core.windows.net'
+  }
+  GalleryAssets: {
+    type: 'FQDN'
+    destination: '*.gallerycdn.vsassets.io'
+  }
+  RawGithub: {
+    type: 'FQDN'
+    destination: 'raw.githubusercontent.com'
+  }
+  Vscodeunpkg: {
+    type: 'FQDN'
+    destination: '*.vscode-unpkg.net'
+  }
+  VscodeCDN: {
+    type: 'FQDN'
+    destination: '*.vscode-cdn.net'
+  }
+  VScodeexperiments: {
+    type: 'FQDN'
+    destination: '*.vscodeexperiments.azureedge.net'
+  }
+  defaulttas: {
+    type: 'FQDN'
+    destination: 'default.exp-tas.com'
+  }
+  codevsstudio: {
+    type: 'FQDN'
+    destination: 'code.visualstudio.com'
+  }
+  updatecode: {
+    type: 'FQDN'
+    destination: 'update.code.visualstudio.com'
+  }
+  vo: {
+    type: 'FQDN'
+    destination: '*.vo.msecnd.net'
+  }
+  marketplace: {
+    type: 'FQDN'
+    destination: 'marketplace.visualstudio.com'
+  }
+  vscodedownload: {
+    type: 'FQDN'
+    destination: 'vscode.download.prss.microsoft.com'
+  }
+  dockerio: {
+    type: 'FQDN'
+    destination: 'docker.io'
+  }
+  dockeriostar: {
+    type: 'FQDN'
+    destination: '*.docker.io'
+  }
+  dockerstar: {
+    type: 'FQDN'
+    destination: '*.docker.com'
+  }
+  productioncloudflare: {
+    type: 'FQDN'
+    destination: 'production.cloudflare.docker.com'
+  }
+  cdnauth: {
+    type: 'FQDN'
+    destination: 'cdn.auth0.com'
+  }
+  huggingface: {
+    type: 'FQDN'
+    destination: 'cdn-lfs.huggingface.co'
+  }
+  github: {
+    type: 'FQDN'
+    destination: 'github.com'
+  }
+
+
 param aiStudioContainerRegistryOption string = 'new'
 @description('Managed network settings to be used for the workspace. If not specified, isolation mode Disabled is the default')
 param aiStudioManagedNetwork object = {
-  isolationMode: 'AllowInternetOutbound'
+  // isolationMode: 'AllowInternetOutbound'
+  isolationMode: 'AllowOnlyApprovedOutbound'
+  outboundRules: customOutboundRules
+  }
 }
+
+
 @description('Specifies whether the workspace can be accessed by public networks or not.')
 param aiStudioPublicNetworkAccess string = 'Disabled'
 
